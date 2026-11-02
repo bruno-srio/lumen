@@ -1,0 +1,40 @@
+.device-card {
+  padding: 16px;
+}
+
+.device-card.unavailable {
+  opacity: 0.62;
+}
+
+scale.hue trough {
+  background-image: linear-gradient(
+    to right,
+    rgb(255, 0, 0),
+    rgb(255, 255, 0),
+    rgb(0, 255, 0),
+    rgb(0, 255, 255),
+    rgb(0, 0, 255),
+    rgb(255, 0, 255),
+    rgb(255, 0, 0)
+  );
+  border-radius: 999px;
+  min-height: 10px;
+}
+
+button.color-swatch {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  border-radius: 999px;
+  background-image: none;
+}
+
+button.color-swatch.swatch-red { background-color: #e23d3d; }
+button.color-swatch.swatch-orange { background-color: #ef8a22; }
+button.color-swatch.swatch-yellow { background-color: #e6c229; }
+button.color-swatch.swatch-green { background-color: #3cba54; }
+button.color-swatch.swatch-cyan { background-color: #2aabb8; }
+button.color-swatch.swatch-blue { background-color: #3d6fe0; }
+button.color-swatch.swatch-purple { background-color: #8a4fd4; }
+button.color-swatch.swatch-pink { background-color: #d4538c; }
+button.color-swatch.swatch-white { background-color: #f4f1ea; }

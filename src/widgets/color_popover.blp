@@ -1,0 +1,80 @@
+using Gtk 4.0;
+
+template $LumenColorPopover : Popover {
+  Box {
+    orientation: vertical;
+    spacing: 12;
+    margin-top: 12;
+    margin-bottom: 12;
+    margin-start: 12;
+    margin-end: 12;
+    width-request: 280;
+
+    Label {
+      label: _("Color");
+      halign: start;
+      css-classes: ["heading"];
+    }
+
+    FlowBox swatches {
+      selection-mode: none;
+      homogeneous: true;
+      min-children-per-line: 5;
+      max-children-per-line: 5;
+      column-spacing: 6;
+      row-spacing: 6;
+      activate-on-single-click: false;
+    }
+
+    Box {
+      spacing: 8;
+
+      Label {
+        label: _("Hue");
+        width-request: 72;
+        xalign: 0;
+      }
+
+      Scale hue_scale {
+        hexpand: true;
+        draw-value: false;
+        css-classes: ["hue"];
+
+        adjustment: Adjustment {
+          lower: 0;
+          upper: 359;
+          step-increment: 1;
+          page-increment: 20;
+        };
+      }
+    }
+
+    Box {
+      spacing: 8;
+
+      Label {
+        label: _("Saturation");
+        width-request: 72;
+        xalign: 0;
+      }
+
+      Scale sat_scale {
+        hexpand: true;
+        draw-value: false;
+
+        adjustment: Adjustment {
+          lower: 0;
+          upper: 100;
+          step-increment: 1;
+          page-increment: 10;
+        };
+      }
+    }
+
+    Button custom_button {
+      label: _("Custom…");
+      halign: end;
+      css-classes: ["flat"];
+    }
+  }
+}

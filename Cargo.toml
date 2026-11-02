@@ -1,0 +1,34 @@
+[workspace]
+resolver = "2"
+members = [".", "crates/yeelight", "crates/yeelight-sim"]
+
+[package]
+name = "lumen"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+publish = false
+description = "Control Yeelight lights on the local network"
+rust-version = "1.85"
+
+[[bin]]
+name = "lumen"
+path = "src/main.rs"
+
+[dependencies]
+adw = { package = "libadwaita", version = "0.9", features = ["v1_8"] }
+async-channel = "2"
+gdk = { package = "gdk4", version = "0.11" }
+gettext-rs = { version = "0.7", features = ["gettext-system"] }
+gio = "0.22"
+glib = "0.22"
+gtk = { package = "gtk4", version = "0.11", features = ["v4_20"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+yeelight = { path = "crates/yeelight" }
+
+[build-dependencies]
+glib-build-tools = "0.22"

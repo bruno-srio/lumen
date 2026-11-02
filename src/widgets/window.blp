@@ -1,0 +1,85 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $LumenWindow : Adw.ApplicationWindow {
+  title: _("Lumen");
+  default-width: 480;
+  default-height: 680;
+  width-request: 360;
+  height-request: 280;
+
+  Adw.ToastOverlay toast_overlay {
+    Adw.ToolbarView {
+      [top]
+      Adw.HeaderBar {
+        [start]
+        Button refresh_button {
+          icon-name: "view-refresh-symbolic";
+          tooltip-text: _("Search Again");
+          action-name: "win.refresh";
+        }
+
+        [end]
+        MenuButton menu_button {
+          icon-name: "open-menu-symbolic";
+          tooltip-text: _("Main Menu");
+          primary: true;
+        }
+      }
+
+      content: Stack stack {
+        hexpand: true;
+        vexpand: true;
+
+        StackPage {
+          name: "searching";
+          child: Adw.StatusPage {
+            title: _("Looking for lights…");
+            description: _("Searching the local network for Yeelight lights.");
+            child: Adw.Spinner {};
+          };
+        }
+
+        StackPage {
+          name: "empty";
+          child: Adw.StatusPage {
+            title: _("No Lights Found");
+            description: _("Turn on LAN Control for each light in the Yeelight app, then make sure this computer is on the same network.");
+            icon-name: "lightbulb-symbolic";
+
+            child: Button {
+              label: _("Search Again");
+              action-name: "win.refresh";
+              css-classes: ["pill", "suggested-action"];
+              halign: center;
+            };
+          };
+        }
+
+        StackPage {
+          name: "devices";
+          child: ScrolledWindow {
+            hscrollbar-policy: never;
+            child: Adw.Clamp {
+              maximum-size: 1100;
+              tightening-threshold: 360;
+              child: FlowBox devices_box {
+                margin-top: 12;
+                margin-bottom: 24;
+                margin-start: 12;
+                margin-end: 12;
+                row-spacing: 12;
+                column-spacing: 12;
+                selection-mode: none;
+                homogeneous: true;
+                min-children-per-line: 1;
+                max-children-per-line: 3;
+                activate-on-single-click: false;
+              };
+            };
+          };
+        }
+      };
+    }
+  }
+}

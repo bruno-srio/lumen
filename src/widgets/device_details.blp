@@ -1,0 +1,67 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $LumenDeviceDetails : Adw.Dialog {
+  title: _("Device Details");
+  content-width: 420;
+  content-height: 560;
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {}
+
+    content: Adw.PreferencesPage {
+      Adw.PreferencesGroup {
+        title: _("Name");
+
+        Adw.EntryRow name_row {
+          title: _("Name");
+        }
+      }
+
+      Adw.PreferencesGroup {
+        title: _("Network");
+
+        Adw.ActionRow address_row {
+          title: _("Address");
+        }
+
+        Adw.ActionRow state_row {
+          title: _("State");
+        }
+      }
+
+      Adw.PreferencesGroup {
+        title: _("Device");
+
+        Adw.ActionRow model_row {
+          title: _("Model");
+        }
+
+        Adw.ActionRow firmware_row {
+          title: _("Firmware");
+        }
+
+        Adw.ActionRow id_row {
+          title: _("Identifier");
+        }
+
+        Adw.ActionRow features_row {
+          title: _("Features");
+        }
+      }
+
+      Adw.PreferencesGroup {
+        title: _("Stored on this computer");
+
+        Button forget_button {
+          label: _("Forget Device");
+          css-classes: ["destructive-action", "pill"];
+          halign: center;
+          margin-top: 6;
+          margin-bottom: 12;
+        }
+      }
+    };
+  };
+}

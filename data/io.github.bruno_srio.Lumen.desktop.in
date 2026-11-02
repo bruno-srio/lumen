@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Lumen
+GenericName=Light Controller
+Comment=Control Yeelight lights on your local network
+Exec=@BIN@
+Icon=@APP_ID@
+Terminal=false
+Type=Application
+Categories=Utility;
+Keywords=light;bulb;lamp;yeelight;
+StartupNotify=true
+DBusActivatable=false

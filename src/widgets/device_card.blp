@@ -1,0 +1,91 @@
+using Gtk 4.0;
+
+template $LumenDeviceCard : Box {
+  orientation: vertical;
+  spacing: 12;
+  margin-top: 6;
+  margin-bottom: 6;
+  margin-start: 6;
+  margin-end: 6;
+  width-request: 280;
+  css-classes: ["card", "device-card"];
+
+  Box {
+    spacing: 12;
+
+    DrawingArea color_dot {
+      width-request: 18;
+      height-request: 18;
+      valign: center;
+      accessible-role: presentation;
+    }
+
+    Box {
+      orientation: vertical;
+      hexpand: true;
+      spacing: 2;
+
+      Label name_label {
+        halign: start;
+        ellipsize: end;
+        css-classes: ["title-4"];
+      }
+
+      Label status_label {
+        halign: start;
+        ellipsize: end;
+        css-classes: ["dimmed", "caption"];
+      }
+    }
+
+    Switch power_switch {
+      valign: center;
+      tooltip-text: _("Power");
+    }
+  }
+
+  Box brightness_row {
+    spacing: 8;
+
+    Image {
+      icon-name: "night-light-symbolic";
+      accessible-role: presentation;
+    }
+
+    Scale brightness_scale {
+      hexpand: true;
+      draw-value: false;
+      tooltip-text: _("Brightness");
+
+      adjustment: Adjustment {
+        lower: 1;
+        upper: 100;
+        step-increment: 1;
+        page-increment: 10;
+      };
+    }
+
+    Image {
+      icon-name: "display-brightness-symbolic";
+      accessible-role: presentation;
+    }
+  }
+
+  Box {
+    spacing: 6;
+
+    MenuButton color_button {
+      label: _("Color");
+      tooltip-text: _("Color");
+      css-classes: ["flat"];
+    }
+
+    MenuButton card_menu {
+      icon-name: "view-more-symbolic";
+      tooltip-text: _("Device Menu");
+      css-classes: ["flat"];
+      halign: end;
+      hexpand: true;
+    }
+  }
+}

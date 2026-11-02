@@ -1,0 +1,9 @@
+src/application.rs
+src/main.rs
+src/model/device_object.rs
+src/widgets/mod.rs
+src/widgets/window.rs
+src/widgets/device_card.rs
+src/widgets/color_popover.rs
+src/widgets/rename_dialog.rs
+src/widgets/device_details.rs

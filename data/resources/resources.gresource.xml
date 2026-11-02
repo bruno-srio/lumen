@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/io/github/bruno_srio/Lumen">
+    <file>window.ui</file>
+    <file>device_card.ui</file>
+    <file>color_popover.ui</file>
+    <file>rename_dialog.ui</file>
+    <file>device_details.ui</file>
+    <file compressed="true">style.css</file>
+  </gresource>
+</gresources>

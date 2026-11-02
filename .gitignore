@@ -1,0 +1,10 @@
+/target/
+/_build/
+/_install/
+/.flatpak-builder/
+/repo/
+/.direnv/
+**/*.flatpak
+.cargo/config.toml
+*.gresource
+gschemas.compiled
