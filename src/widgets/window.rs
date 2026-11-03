@@ -10,7 +10,7 @@ use gtk::prelude::*;
 use gtk::subclass::prelude::*;
 use std::cell::{Cell, OnceCell};
 use std::net::SocketAddr;
-use yeelight::{BackendCommand, BackendEvent, Capabilities, DeviceId};
+use yeelight::{BackendCommand, BackendEvent, Capabilities, ColorUpdate, DeviceId};
 
 mod imp {
     use super::*;
@@ -189,8 +189,14 @@ impl Window {
                 let id = device.device_id();
                 let window_rename = window.clone();
                 let window_details = window.clone();
+                let window_power = window.clone();
+                let window_brightness = window.clone();
+                let window_color = window.clone();
                 let rename_id = id.clone();
                 let details_id = id.clone();
+                let power_id = id.clone();
+                let brightness_id = id.clone();
+                let color_id = id;
                 let card = DeviceCard::new(
                     &device,
                     move || {
@@ -201,6 +207,21 @@ impl Window {
                     move || {
                         if let Some(window) = window_details.upgrade() {
                             window.show_details(&details_id);
+                        }
+                    },
+                    move |on| {
+                        if let Some(window) = window_power.upgrade() {
+                            window.send_power(&power_id, on);
+                        }
+                    },
+                    move |brightness| {
+                        if let Some(window) = window_brightness.upgrade() {
+                            window.send_brightness(&brightness_id, brightness);
+                        }
+                    },
+                    move |hue, sat| {
+                        if let Some(window) = window_color.upgrade() {
+                            window.send_color(&color_id, hue, sat);
                         }
                     },
                 );
@@ -232,6 +253,33 @@ impl Window {
             }
         }
         self.update_page();
+    }
+
+    fn send_power(&self, id: &str, on: bool) {
+        if let Some(backend) = self.imp().backend.get() {
+            backend.send(BackendCommand::SetPower {
+                id: DeviceId::new(id),
+                on,
+            });
+        }
+    }
+
+    fn send_brightness(&self, id: &str, brightness: u8) {
+        if let Some(backend) = self.imp().backend.get() {
+            backend.send(BackendCommand::SetBrightness {
+                id: DeviceId::new(id),
+                brightness,
+            });
+        }
+    }
+
+    fn send_color(&self, id: &str, hue: u16, sat: u8) {
+        if let Some(backend) = self.imp().backend.get() {
+            backend.send(BackendCommand::SetColor {
+                id: DeviceId::new(id),
+                color: ColorUpdate::Hsv { hue, sat },
+            });
+        }
     }
 
     fn refresh(&self) {

@@ -62,10 +62,13 @@ impl DeviceCard {
         device: &DeviceObject,
         on_rename: impl Fn() + 'static,
         on_details: impl Fn() + 'static,
+        on_power: impl Fn(bool) + 'static,
+        on_brightness: impl Fn(u8) + 'static,
+        on_color: impl Fn(u16, u8) + 'static,
     ) -> Self {
         let card: Self = glib::Object::new();
         card.set_widget_name(&device.device_id());
-        card.bind(device);
+        card.bind(device, on_power, on_brightness, on_color);
         card.install_actions(on_rename, on_details);
         card
     }
@@ -74,7 +77,13 @@ impl DeviceCard {
         self.widget_name().to_string()
     }
 
-    fn bind(&self, device: &DeviceObject) {
+    fn bind(
+        &self,
+        device: &DeviceObject,
+        on_power: impl Fn(bool) + 'static,
+        on_brightness: impl Fn(u8) + 'static,
+        on_color: impl Fn(u16, u8) + 'static,
+    ) {
         let imp = self.imp();
         device
             .bind_property("name", &imp.name_label.get(), "label")
@@ -159,6 +168,7 @@ impl DeviceCard {
             if let Some(device) = device_for_switch.upgrade() {
                 if device.power() != on {
                     device.user_power(on);
+                    on_power(on);
                 }
             }
             glib::Propagation::Proceed
@@ -170,7 +180,9 @@ impl DeviceCard {
                 let value = value.clamp(1.0, 100.0);
                 scale.set_value(value);
                 if let Some(device) = device_for_scale.upgrade() {
-                    device.user_brightness(value.round() as u8);
+                    let brightness = value.round() as u8;
+                    device.user_brightness(brightness);
+                    on_brightness(brightness);
                 }
                 glib::Propagation::Stop
             });
@@ -180,6 +192,7 @@ impl DeviceCard {
         popover.connect_selected(move |hue, sat| {
             if let Some(device) = device_for_color.upgrade() {
                 device.user_color(hue, sat);
+                on_color(hue, sat);
             }
         });
         let device_for_show = device.downgrade();
