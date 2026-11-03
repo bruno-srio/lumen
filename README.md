@@ -1,78 +1,71 @@
-# Lumen
+<p align="center">
+  <img src="data/icons/hicolor/scalable/apps/io.github.bruno_srio.Lumen.svg" width="96" alt="">
+</p>
 
-Lumen is a native GNOME application for controlling Yeelight lights on the local network. It discovers bulbs with the official LAN protocol, shows each one as a card, and can turn them on or off, change brightness, and pick a color.
+<h1 align="center">Lumen</h1>
 
-It does not use a Yeelight account, a cloud API, or an internet connection. LAN Control must be enabled on each light in the Yeelight mobile app.
+<p align="center">Control Yeelight lights on your local network.</p>
+
+<p align="center">
+  <a href="https://github.com/bruno-srio/lumen/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/bruno-srio/lumen/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="LICENSE"><img alt="License GPL-3.0-or-later" src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue"></a>
+  <a href="https://github.com/bruno-srio/lumen/releases/latest"><img alt="Download" src="https://img.shields.io/badge/download-latest%20release-e5a50a"></a>
+</p>
+
+<p align="center">
+  <img src="data/screenshots/lights.png" width="640" alt="Lumen showing three lights with power, brightness, and color controls">
+</p>
+
+Lumen is a native GNOME application. It finds Yeelight lights on the LAN and lets you turn them on or off, set the brightness, and pick a color. It does not use a Yeelight account, a cloud API, or an internet connection.
 
 Yeelight is a trademark of its owner. Lumen is an independent project and is not affiliated with Yeelight.
 
+## Install
+
+Download `lumen-0.1.1.flatpak` from the [latest release](https://github.com/bruno-srio/lumen/releases/latest) and install it:
+
+```sh
+flatpak install --user lumen-0.1.1.flatpak
+flatpak run io.github.bruno_srio.Lumen
+```
+
+A Flathub listing is planned after the next release. Until then, the GitHub release is the download.
+
 ## What it does
 
-- Finds lights with the Yeelight UDP discovery protocol, and also reconnects to lights it has seen before.
-- Remembers names you choose. Names are stored by device id, so they survive IP address changes.
-- Shows power, brightness, and color controls that match what each light actually supports.
-- Keeps working when a light goes away, and reconnects when it comes back.
-- Slows down slider and color changes so a drag does not hit the bulb's command limit.
+- Discovers lights and reconnects to ones it has seen before.
+- Remembers the names you choose, even when an IP address changes.
+- Shows only the controls each bulb actually supports.
+- Dims a card when a light goes away, and reconnects when it returns.
+- Slows slider changes so a drag does not hit the bulb's command limit.
 
-Color temperature, groups, presets, and scenes are intentionally not in this version. The protocol code already knows about color temperature so it can be added later.
+## Enable LAN Control
 
-## Requirements
+Each bulb has LAN Control (sometimes called Developer Mode) turned off until you enable it in the Yeelight mobile app, in that light's settings. The computer and the lights must be on the same network. Details are in [docs/TESTING.md](docs/TESTING.md).
 
-Fedora (or another distribution with GTK 4.20, libadwaita 1.8, and a Rust 1.85 toolchain):
+## Build from source
+
+Fedora, or another distribution with GTK 4.20, libadwaita 1.8, and Rust 1.85:
 
 ```sh
 sudo dnf install rust cargo clippy rustfmt gtk4-devel libadwaita-devel \
   meson blueprint-compiler desktop-file-utils appstream gettext gcc pkgconf
-```
-
-## Build and run
-
-```sh
 meson setup _build -Dprofile=development
 meson compile -C _build
 _build/src/lumen
 ```
 
-The development profile uses the application id `io.github.bruno_srio.Lumen.Devel`, which keeps its settings separate from a release build.
+The development build uses the application id `io.github.bruno_srio.Lumen.Devel`, so its settings stay separate. To try the app without bulbs, run `cargo run -p yeelight-sim`. See [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/TESTING.md](docs/TESTING.md).
 
-Release build:
+## Support the project
 
-```sh
-meson setup _build-release --buildtype=release -Dprofile=default
-meson compile -C _build-release
-```
+If Lumen is useful, you can support development:
 
-## Try it without bulbs
+- [GitHub Sponsors](https://github.com/sponsors/bruno-srio)
+- [Ko-fi](https://ko-fi.com/bruno-srio)
 
-`yeelight-sim` speaks the real protocol:
+## More
 
-```sh
-cargo run -p yeelight-sim
-```
-
-It prints a discovery port and one TCP address per virtual light. In another terminal:
-
-```sh
-cargo run -p yeelight --example discover
-cargo run -p yeelight --example control -- 127.0.0.1:PORT bright 30
-```
-
-The simulator starts a color bulb, a white-only bulb, and a color-temperature bulb. See [docs/TESTING.md](docs/TESTING.md).
-
-## Tests
-
-```sh
-cargo test -p yeelight -p yeelight-sim
-```
-
-## Data
-
-Custom names and the last address of each light are stored in `$XDG_CONFIG_HOME/io.github.bruno_srio.Lumen/devices.json` (or the `.Devel` id for development builds). Window size is stored with GSettings.
-
-## Security
-
-The Yeelight protocol has no encryption and no authentication. Read [docs/SECURITY.md](docs/SECURITY.md) before using Lumen on a shared network.
-
-## Packaging
-
-A Flatpak manifest is in `build-aux/`. Building it needs the GNOME 51 SDK, the Freedesktop Rust SDK extension, and `build-aux/cargo-sources.json` generated from `Cargo.lock`. The process is described in [docs/PACKAGING.md](docs/PACKAGING.md).
+- [Security](docs/SECURITY.md) — the Yeelight protocol is not encrypted.
+- [Packaging](docs/PACKAGING.md) — Flatpak and Flathub.
+- [Protocol notes](docs/PROTOCOL-NOTES.md)

@@ -1,0 +1,17 @@
+name: Feature request
+description: Suggest a change to Lumen
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is missing
+      description: Which lights or workflow does this affect?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like
+    validations:
+      required: true

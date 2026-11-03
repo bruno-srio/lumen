@@ -1,0 +1,45 @@
+name: Bug report
+description: Something does not work with a light or the window
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, and what Lumen did instead.
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Bulb model
+      description: Shown in Device Details, for example color, mono, or ceiling10.
+      placeholder: color4
+  - type: input
+    id: firmware
+    attributes:
+      label: Firmware
+      placeholder: "18"
+  - type: input
+    id: distro
+    attributes:
+      label: Distribution
+      placeholder: Fedora 44
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How is Lumen installed
+      options:
+        - Flatpak from Flathub
+        - Flatpak bundle from GitHub
+        - Built from source
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Extra detail
+      description: Run with RUST_LOG=lumen=debug,yeelight=debug and paste the relevant lines. Do not include your network passwords.
+      render: text

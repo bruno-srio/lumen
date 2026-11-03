@@ -19,3 +19,21 @@ jobs:
         run: cargo clippy -p yeelight -p yeelight-sim --all-targets -- -D warnings
       - name: Test
         run: cargo test -p yeelight -p yeelight-sim
+
+  flatpak:
+    name: Flatpak
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: lumen-devel.flatpak
+          manifest-path: build-aux/io.github.bruno_srio.Lumen.Devel.json
+          cache-key: flatpak-gnome-51
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lumen-devel-flatpak
+          path: lumen-devel.flatpak

@@ -27,16 +27,21 @@
   <url type="homepage">https://github.com/bruno-srio/lumen</url>
   <url type="vcs-browser">https://github.com/bruno-srio/lumen</url>
   <url type="bugtracker">https://github.com/bruno-srio/lumen/issues</url>
+  <url type="donation">https://github.com/sponsors/bruno-srio</url>
   <screenshots>
     <screenshot type="default">
       <caption>The light list, with power, brightness, and color controls</caption>
-      <image>https://raw.githubusercontent.com/bruno-srio/lumen/v0.1.0/data/screenshots/lights.png</image>
+      <image>https://raw.githubusercontent.com/bruno-srio/lumen/v0.1.1/data/screenshots/lights.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Lumen in the dark style</caption>
+      <image>https://raw.githubusercontent.com/bruno-srio/lumen/v0.1.1/data/screenshots/lights-dark.png</image>
     </screenshot>
   </screenshots>
   <releases>
-    <release version="0.1.0" date="2026-11-02">
+    <release version="0.1.1" date="2026-11-03">
       <description>
-        <p>First release. Discover lights, rename them, and control power, brightness, and color.</p>
+        <p>Power, brightness, and color changes are sent to the lights. Names and addresses are remembered between launches.</p>
       </description>
     </release>
   </releases>
