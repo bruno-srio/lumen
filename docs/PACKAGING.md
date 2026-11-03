@@ -27,7 +27,7 @@ flatpak run org.flatpak.Builder --force-clean --user --install \
 flatpak run io.github.bruno_srio.Lumen.Devel
 ```
 
-The release manifest is `build-aux/io.github.bruno_srio.Lumen.json`. Both manifests currently point at this source tree so they can be built before the project is published. A Flathub submission should replace the `dir` source with the signed `v0.1.0` archive (or a git tag) and commit `cargo-sources.json` beside the manifest.
+The release manifest is `build-aux/io.github.bruno_srio.Lumen.json`. Both manifests point at this source tree so they can be built locally. The Flathub submission replaces the `dir` source with the `v0.2.0` GitHub archive and its `sha256`, and commits a fresh `cargo-sources.json` beside that manifest.
 
 Check the result:
 

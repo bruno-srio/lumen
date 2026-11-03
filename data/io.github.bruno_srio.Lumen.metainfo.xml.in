@@ -39,6 +39,11 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.3.0" date="2026-11-03">
+      <description>
+        <p>The window can stay connected after it is closed, and Toggle All Lights can be bound as a system shortcut.</p>
+      </description>
+    </release>
     <release version="0.2.0" date="2026-11-03">
       <description>
         <p>Adds color temperature, saved colors, groups, effects, a sleep timer, all-on and all-off, adding a light by address, an optional name stored on the bulb, and a Brazilian Portuguese translation.</p>

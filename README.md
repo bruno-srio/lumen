@@ -31,7 +31,8 @@ Yeelight is a trademark of its owner. Lumen is an independent project and is not
 - Shows only the controls each bulb actually supports, including color temperature.
 - Groups lights so one switch, slider, or color applies to the whole room.
 - Saves colors, runs candle, sunrise, and color-loop effects, and sets a sleep timer.
-- Turns every reachable light on or off at once.
+- Turns every reachable light on or off at once, including from a system shortcut while the window is closed.
+- Can keep running after the window is closed.
 - Dims a card when a light goes away, and reconnects when it returns.
 - Slows slider changes so a drag does not hit the bulb's command limit.
 
@@ -41,7 +42,7 @@ Each bulb has LAN Control (sometimes called Developer Mode) turned off until you
 
 ## Build from source
 
-Fedora, or another distribution with GTK 4.20, libadwaita 1.8, and Rust 1.85:
+Fedora, or another distribution with GTK 4.20, libadwaita 1.8, and Rust 1.87:
 
 ```sh
 sudo dnf install rust cargo clippy rustfmt gtk4-devel libadwaita-devel \

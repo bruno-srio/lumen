@@ -4,12 +4,12 @@ members = [".", "crates/yeelight", "crates/yeelight-sim"]
 
 [package]
 name = "lumen"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 license = "GPL-3.0-or-later"
 publish = false
 description = "Control Yeelight lights on the local network"
-rust-version = "1.85"
+rust-version = "1.87"
 
 [[bin]]
 name = "lumen"
@@ -17,7 +17,9 @@ path = "src/main.rs"
 
 [dependencies]
 adw = { package = "libadwaita", version = "0.9", features = ["v1_8"] }
+ashpd = { version = "0.13", default-features = false, features = ["tokio", "gtk4", "background", "global_shortcuts"] }
 async-channel = "2"
+futures-util = "0.3"
 gdk = { package = "gdk4", version = "0.11" }
 gettext-rs = { version = "0.7", features = ["gettext-system"] }
 gio = "0.22"

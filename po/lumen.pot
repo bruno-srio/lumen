@@ -468,3 +468,35 @@ msgstr ""
 #: data/io.github.bruno_srio.Lumen.metainfo.xml.in:24
 msgid "Yeelight is a trademark of its owner. Lumen is an independent project and is not affiliated with Yeelight."
 msgstr ""
+
+#: src/widgets/window.rs
+msgid "Preferences"
+msgstr ""
+
+#: src/widgets/window.rs
+msgid "Background"
+msgstr ""
+
+#: src/widgets/window.rs
+msgid "Run in Background"
+msgstr ""
+
+#: src/widgets/window.rs
+msgid "Closing the window keeps the lights connected. Toggle All Lights can then be set as a system shortcut."
+msgstr ""
+
+#: src/widgets/window.rs
+msgid "The session did not allow Lumen to run in the background."
+msgstr ""
+
+#: src/portals.rs
+msgid "Keep controlling lights after the window is closed, and listen for the Toggle All Lights shortcut."
+msgstr ""
+
+#: src/portals.rs
+msgid "Toggle All Lights"
+msgstr ""
+
+#: data/io.github.bruno_srio.Lumen.metainfo.xml.in
+msgid "The window can stay connected after it is closed, and Toggle All Lights can be bound as a system shortcut."
+msgstr ""

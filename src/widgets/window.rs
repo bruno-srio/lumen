@@ -7,12 +7,15 @@ use crate::config::APP_ID;
 use crate::model::{DeviceList, DeviceObject};
 use crate::store::{DeviceStore, StoredGroup, StoredPreset};
 use crate::widgets::DeviceCard;
-use adw::prelude::{AdwDialogExt, AlertDialogExt};
+use adw::prelude::{
+    ActionRowExt, AdwDialogExt, AlertDialogExt, PreferencesDialogExt, PreferencesGroupExt,
+    PreferencesPageExt, PreferencesRowExt,
+};
 use gettextrs::gettext;
 use glib::subclass::prelude::*;
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
-use std::cell::{Cell, OnceCell};
+use std::cell::{Cell, OnceCell, RefCell};
 use std::net::{Ipv4Addr, SocketAddr};
 use yeelight::{BackendCommand, BackendEvent, Capabilities, ColorUpdate, DeviceId, EffectPreset};
 
@@ -40,6 +43,9 @@ mod imp {
         pub store: OnceCell<DeviceStore>,
         pub devices: DeviceList,
         pub scan_done: Cell<bool>,
+        pub updating_pref: Cell<bool>,
+        pub shortcut_task: RefCell<Option<tokio::task::AbortHandle>>,
+        pub preference_switch: RefCell<Option<glib::WeakRef<adw::SwitchRow>>>,
     }
 
     #[glib::object_subclass]
@@ -96,6 +102,10 @@ impl Window {
         self.bind_devices();
         self.rebuild_groups();
         self.refresh();
+        if settings().is_some_and(|settings| settings.boolean("run-in-background")) {
+            self.set_hide_on_close(true);
+            self.start_background();
+        }
 
         let window = self.downgrade();
         glib::spawn_future_local(async move {
@@ -107,16 +117,25 @@ impl Window {
             }
         });
 
-        let window = self.downgrade();
         self.connect_close_request(move |window| {
             save_window_state(window);
-            if let Some(backend) = window.imp().backend.get() {
-                backend.send(BackendCommand::Shutdown);
-            }
-            let _ = window;
+            let background =
+                settings().is_some_and(|settings| settings.boolean("run-in-background"));
+            window.set_hide_on_close(background);
             glib::Propagation::Proceed
         });
-        let _ = window;
+
+        if let Some(app) = self.application() {
+            let window = self.downgrade();
+            app.connect_shutdown(move |_| {
+                let Some(window) = window.upgrade() else {
+                    return;
+                };
+                if let Some(backend) = window.imp().backend.get() {
+                    backend.send(BackendCommand::Shutdown);
+                }
+            });
+        }
     }
 
     fn install_actions(&self) {
@@ -172,6 +191,7 @@ impl Window {
         self.add_simple("add-light", |window| window.prompt_probe());
         self.add_simple("new-group", |window| window.edit_group(None));
         self.add_simple("lan-help", |window| window.open_lan_help());
+        self.add_simple("preferences", |window| window.present_preferences());
     }
 
     fn add_simple(&self, name: &str, callback: impl Fn(&Window) + 'static) {
@@ -194,6 +214,7 @@ impl Window {
             Some("win.add-light"),
         );
         menu.append(Some(&gettext("New Group…")), Some("win.new-group"));
+        menu.append(Some(&gettext("Preferences")), Some("win.preferences"));
         menu.append(Some(&gettext("Keyboard Shortcuts")), Some("win.shortcuts"));
         menu.append(Some(&gettext("About Lumen")), Some("win.about"));
         self.imp().menu_button.set_menu_model(Some(&menu));
@@ -409,6 +430,119 @@ impl Window {
                 minutes,
             });
         }
+    }
+
+    fn toggle_all(&self) {
+        let any_on = self
+            .imp()
+            .devices
+            .iter()
+            .into_iter()
+            .any(|device| device.online() && device.has_power() && device.power());
+        self.set_all_power(!any_on);
+    }
+
+    fn present_preferences(&self) {
+        let dialog = adw::PreferencesDialog::new();
+        let page = adw::PreferencesPage::new();
+        let group = adw::PreferencesGroup::new();
+        group.set_title(&gettext("Background"));
+        let row = adw::SwitchRow::new();
+        row.set_title(&gettext("Run in Background"));
+        row.set_subtitle(&gettext(
+            "Closing the window keeps the lights connected. Toggle All Lights can then be set as a system shortcut.",
+        ));
+        let enabled = settings().is_some_and(|settings| settings.boolean("run-in-background"));
+        self.imp().updating_pref.set(true);
+        row.set_active(enabled);
+        self.imp().updating_pref.set(false);
+        self.imp().preference_switch.replace(Some(row.downgrade()));
+        let window = self.downgrade();
+        row.connect_active_notify(move |row| {
+            let Some(window) = window.upgrade() else {
+                return;
+            };
+            if window.imp().updating_pref.get() {
+                return;
+            }
+            window.set_run_in_background(row.is_active());
+        });
+        group.add(&row);
+        page.add(&group);
+        dialog.add(&page);
+        dialog.present(Some(self));
+    }
+
+    fn set_run_in_background(&self, enabled: bool) {
+        if let Some(settings) = settings() {
+            let _ = settings.set_boolean("run-in-background", enabled);
+        }
+        self.set_hide_on_close(enabled);
+        if enabled {
+            self.start_background();
+        } else {
+            self.stop_background();
+        }
+    }
+
+    fn start_background(&self) {
+        self.stop_background();
+        let window = self.clone();
+        glib::spawn_future_local(async move {
+            let identifier = crate::portals::window_identifier(&window).await;
+            let (denied_tx, denied_rx) = async_channel::bounded(1);
+            let handle = crate::portals::spawn(async move {
+                match crate::portals::request_background(identifier).await {
+                    Ok(false) => {
+                        let _ = denied_tx.send(()).await;
+                    }
+                    result => {
+                        if let Err(err) = result {
+                            tracing::warn!("background portal is unavailable: {err}");
+                        }
+                        if let Err(err) = crate::portals::listen_for_toggle(|| {
+                            crate::portals::invoke_on_main(toggle_from_shortcut);
+                        })
+                        .await
+                        {
+                            tracing::warn!("global shortcut portal stopped: {err}");
+                        }
+                    }
+                }
+            });
+            window.imp().shortcut_task.replace(Some(handle));
+            if denied_rx.recv().await.is_ok() {
+                window.background_denied();
+            }
+        });
+    }
+
+    fn stop_background(&self) {
+        if let Some(task) = self.imp().shortcut_task.borrow_mut().take() {
+            task.abort();
+        }
+    }
+
+    fn background_denied(&self) {
+        self.imp().updating_pref.set(true);
+        if let Some(settings) = settings() {
+            let _ = settings.set_boolean("run-in-background", false);
+        }
+        if let Some(row) = self
+            .imp()
+            .preference_switch
+            .borrow()
+            .as_ref()
+            .and_then(glib::WeakRef::upgrade)
+        {
+            row.set_active(false);
+        }
+        self.set_hide_on_close(false);
+        self.stop_background();
+        self.imp().updating_pref.set(false);
+        self.toast(&gettext(
+            "The session did not allow Lumen to run in the background.",
+        ));
     }
 
     fn set_all_power(&self, on: bool) {
@@ -940,6 +1074,18 @@ impl Window {
                 return Some(card.clone());
             }
             widget = widget.parent()?;
+        }
+    }
+}
+
+fn toggle_from_shortcut() {
+    let Some(app) = gio::Application::default().and_downcast::<gtk::Application>() else {
+        return;
+    };
+    for window in app.windows() {
+        if let Ok(window) = window.downcast::<Window>() {
+            window.toggle_all();
+            return;
         }
     }
 }

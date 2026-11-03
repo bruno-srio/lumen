@@ -460,3 +460,35 @@ msgstr "O Controle LAN precisa ser ativado em cada lâmpada no aplicativo Yeelig
 #: data/io.github.bruno_srio.Lumen.metainfo.xml.in:24
 msgid "Yeelight is a trademark of its owner. Lumen is an independent project and is not affiliated with Yeelight."
 msgstr "Yeelight é uma marca de seu titular. O Lumen é um projeto independente e não é afiliado à Yeelight."
+
+#: src/widgets/window.rs
+msgid "Preferences"
+msgstr "Preferências"
+
+#: src/widgets/window.rs
+msgid "Background"
+msgstr "Segundo plano"
+
+#: src/widgets/window.rs
+msgid "Run in Background"
+msgstr "Executar em segundo plano"
+
+#: src/widgets/window.rs
+msgid "Closing the window keeps the lights connected. Toggle All Lights can then be set as a system shortcut."
+msgstr "Fechar a janela mantém as lâmpadas conectadas. Alternar todas as lâmpadas pode então ser definido como um atalho do sistema."
+
+#: src/widgets/window.rs
+msgid "The session did not allow Lumen to run in the background."
+msgstr "A sessão não permitiu que o Lumen execute em segundo plano."
+
+#: src/portals.rs
+msgid "Keep controlling lights after the window is closed, and listen for the Toggle All Lights shortcut."
+msgstr "Continue controlando as lâmpadas depois que a janela for fechada e escute o atalho Alternar todas as lâmpadas."
+
+#: src/portals.rs
+msgid "Toggle All Lights"
+msgstr "Alternar todas as lâmpadas"
+
+#: data/io.github.bruno_srio.Lumen.metainfo.xml.in
+msgid "The window can stay connected after it is closed, and Toggle All Lights can be bound as a system shortcut."
+msgstr "A janela pode continuar conectada depois de fechada, e Alternar todas as lâmpadas pode ser definido como um atalho do sistema."

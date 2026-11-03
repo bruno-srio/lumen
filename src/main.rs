@@ -2,6 +2,7 @@ mod application;
 mod backend;
 mod config;
 mod model;
+mod portals;
 mod store;
 mod widgets;
 
