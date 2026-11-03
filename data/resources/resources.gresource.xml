@@ -6,6 +6,8 @@
     <file>color_popover.ui</file>
     <file>rename_dialog.ui</file>
     <file>device_details.ui</file>
+    <file>group_card.ui</file>
+    <file>group_dialog.ui</file>
     <file compressed="true">style.css</file>
   </gresource>
 </gresources>

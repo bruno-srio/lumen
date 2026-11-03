@@ -1,0 +1,66 @@
+using Gtk 4.0;
+
+template $LumenGroupCard : Box {
+  orientation: vertical;
+  spacing: 12;
+  margin-top: 6;
+  margin-bottom: 6;
+  margin-start: 6;
+  margin-end: 6;
+  width-request: 280;
+  css-classes: ["card", "group-card"];
+
+  Box {
+    spacing: 8;
+
+    Box {
+      orientation: vertical;
+      hexpand: true;
+      spacing: 2;
+
+      Label name_label {
+        halign: start;
+        ellipsize: end;
+        css-classes: ["title-4"];
+      }
+
+      Label status_label {
+        halign: start;
+        ellipsize: end;
+        css-classes: ["dimmed", "caption"];
+      }
+    }
+
+    Button edit_button {
+      icon-name: "document-edit-symbolic";
+      tooltip-text: _("Edit Group");
+      css-classes: ["flat"];
+      valign: center;
+    }
+
+    Switch power_switch {
+      valign: center;
+      tooltip-text: _("Power");
+    }
+  }
+
+  Scale brightness_scale {
+    hexpand: true;
+    draw-value: false;
+    tooltip-text: _("Brightness");
+
+    adjustment: Adjustment {
+      lower: 1;
+      upper: 100;
+      step-increment: 1;
+      page-increment: 10;
+    };
+  }
+
+  MenuButton color_button {
+    label: _("Color");
+    tooltip-text: _("Color");
+    css-classes: ["flat"];
+    halign: start;
+  }
+}

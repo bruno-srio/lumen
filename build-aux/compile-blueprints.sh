@@ -10,4 +10,6 @@ cd "$WIDGETS"
   device_card.blp \
   color_popover.blp \
   rename_dialog.blp \
-  device_details.blp
+  device_details.blp \
+  group_card.blp \
+  group_dialog.blp

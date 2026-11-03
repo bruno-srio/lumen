@@ -63,8 +63,28 @@ mod imp {
         pub power_enabled: Cell<bool>,
         #[property(get, set, name = "brightness-enabled")]
         pub brightness_enabled: Cell<bool>,
-        #[property(get, set, name = "color-enabled")]
+        #[property(get, set, name = "tint-enabled")]
         pub color_enabled: Cell<bool>,
+        #[property(get, set, name = "has-tint")]
+        pub has_tint: Cell<bool>,
+        #[property(get, set, name = "color-temperature")]
+        pub color_temperature: Cell<u32>,
+        #[property(get, set, name = "ct-min")]
+        pub ct_min: Cell<u32>,
+        #[property(get, set, name = "ct-max")]
+        pub ct_max: Cell<u32>,
+        #[property(get, set, name = "color-mode")]
+        pub color_mode: Cell<u32>,
+        #[property(get, set)]
+        pub flowing: Cell<bool>,
+        #[property(get, set)]
+        pub delayoff: Cell<u32>,
+        #[property(get, set, name = "has-effects")]
+        pub has_effects: Cell<bool>,
+        #[property(get, set, name = "has-timer")]
+        pub has_timer: Cell<bool>,
+        #[property(get, set, name = "supports-set-name")]
+        pub supports_set_name: Cell<bool>,
 
         pub confirmed_power: Cell<bool>,
         pub confirmed_bright: Cell<u32>,
@@ -113,6 +133,12 @@ impl DeviceObject {
         self.set_has_brightness(caps.brightness);
         self.set_has_color(caps.has_color());
         self.set_has_temperature(caps.color_temperature);
+        self.set_has_tint(caps.has_color() || caps.color_temperature);
+        self.set_ct_min(caps.ct_min);
+        self.set_ct_max(caps.ct_max);
+        self.set_has_effects(caps.effects);
+        self.set_has_timer(caps.timer);
+        self.set_supports_set_name(caps.set_name);
         self.refresh_status();
     }
 
@@ -164,6 +190,22 @@ impl DeviceObject {
         if let Some(rgb) = state.rgb {
             self.set_rgb(rgb);
         }
+        if let Some(ct) = state.ct {
+            if hold_expired(&imp.color_hold) {
+                self.set_color_temperature(ct);
+            }
+        }
+        if let Some(mode) = state.color_mode {
+            if hold_expired(&imp.color_hold) {
+                self.set_color_mode(mode as u32);
+            }
+        }
+        if let Some(flowing) = state.flowing {
+            self.set_flowing(flowing);
+        }
+        if let Some(delayoff) = state.delayoff {
+            self.set_delayoff(delayoff);
+        }
         if let Some(name) = &state.name {
             if self.bulb_name() != *name {
                 self.set_bulb_name(name.clone());
@@ -190,6 +232,16 @@ impl DeviceObject {
         self.set_saturation(u32::from(sat.min(100)));
         let rgb = yeelight::hs_to_rgb(hue, sat).to_u32();
         self.set_rgb(rgb);
+        self.set_color_mode(3);
+        self.refresh_status();
+    }
+
+    pub fn user_temperature(&self, kelvin: u32) {
+        self.imp().color_hold.set(Some(Instant::now() + HOLD));
+        let min = self.ct_min().max(1000);
+        let max = self.ct_max().max(min);
+        self.set_color_temperature(kelvin.clamp(min, max));
+        self.set_color_mode(2);
         self.refresh_status();
     }
 
@@ -229,6 +281,10 @@ impl DeviceObject {
             } else {
                 reason
             }
+        } else if self.flowing() {
+            gettext("Effect running")
+        } else if self.delayoff() > 0 {
+            gettext("Off in {} min").replace("{}", &self.delayoff().to_string())
         } else if !self.power() {
             gettext("Off")
         } else if self.has_brightness() {
@@ -242,7 +298,7 @@ impl DeviceObject {
         let online = self.online();
         self.set_power_enabled(online && self.has_power());
         self.set_brightness_enabled(online && self.power() && self.has_brightness());
-        self.set_color_enabled(online && self.power() && self.has_color());
+        self.set_tint_enabled(online && self.power() && self.has_tint());
     }
 
     pub fn features_label(&self) -> String {
@@ -258,6 +314,12 @@ impl DeviceObject {
         }
         if self.has_temperature() {
             parts.push(gettext("Color temperature"));
+        }
+        if self.has_effects() {
+            parts.push(gettext("Effects"));
+        }
+        if self.has_timer() {
+            parts.push(gettext("Sleep timer"));
         }
         if parts.is_empty() {
             gettext("No controls reported")
@@ -286,7 +348,7 @@ fn reason_text(reason: UnavailableReason) -> String {
         UnavailableReason::Network => gettext("Network error."),
         UnavailableReason::Closed => gettext("The light closed the connection."),
         UnavailableReason::StuckQuota => {
-            gettext("Not responding — try turning the light off and on at the switch.")
+            gettext("Not responding — turn the light off and on at the wall switch.")
         }
     }
 }

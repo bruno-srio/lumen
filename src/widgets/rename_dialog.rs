@@ -1,4 +1,5 @@
 use adw::prelude::*;
+use gettextrs::gettext;
 use glib::subclass::prelude::*;
 use gtk::subclass::prelude::*;
 
@@ -10,6 +11,8 @@ mod imp {
     pub struct RenameDialog {
         #[template_child]
         pub name_entry: TemplateChild<gtk::Entry>,
+        #[template_child]
+        pub save_on_bulb: TemplateChild<gtk::CheckButton>,
     }
 
     #[glib::object_subclass]
@@ -43,18 +46,36 @@ impl RenameDialog {
     pub fn present_for(
         parent: &impl IsA<gtk::Widget>,
         current: &str,
-        on_save: impl Fn(String) + 'static,
+        offer_bulb: bool,
+        on_save: impl Fn(String, bool) + 'static,
     ) {
         let dialog: Self = glib::Object::new();
         dialog.imp().name_entry.set_text(current);
         dialog.imp().name_entry.grab_focus();
+        let check = dialog.imp().save_on_bulb.get();
+        check.set_visible(offer_bulb);
+        check.set_sensitive(offer_bulb && current.is_ascii());
+        let check_for_entry = check.clone();
+        dialog.imp().name_entry.connect_changed(move |entry| {
+            let ascii = entry.text().is_ascii();
+            check_for_entry.set_sensitive(offer_bulb && ascii);
+            if !ascii {
+                check_for_entry.set_active(false);
+                check_for_entry.set_tooltip_text(Some(&gettext(
+                    "Names stored on the light must use only English letters, numbers, and symbols.",
+                )));
+            } else {
+                check_for_entry.set_tooltip_text(None);
+            }
+        });
+        let check_for_save = check.clone();
         dialog.connect_response(None, move |dialog, response| {
             if response == "save" {
                 let name = dialog.imp().name_entry.text().to_string();
                 if name.trim().len() > 64 {
                     return;
                 }
-                on_save(name);
+                on_save(name, check_for_save.is_active());
             }
         });
         dialog.set_response_appearance("save", adw::ResponseAppearance::Suggested);

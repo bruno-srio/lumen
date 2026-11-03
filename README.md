@@ -16,16 +16,16 @@
   <img src="data/screenshots/lights.png" width="640" alt="Lumen showing three lights with power, brightness, and color controls">
 </p>
 
-Lumen is a native GNOME application. It finds Yeelight lights on the LAN and lets you turn them on or off, set the brightness, and pick a color. It does not use a Yeelight account, a cloud API, or an internet connection.
+Lumen is a native GNOME application. It finds Yeelight lights on the LAN and lets you turn them on or off, set the brightness, pick a color or a white temperature, save colors, and control a group together. It does not use a Yeelight account, a cloud API, or an internet connection.
 
 Yeelight is a trademark of its owner. Lumen is an independent project and is not affiliated with Yeelight.
 
 ## Install
 
-Download `lumen-0.1.1.flatpak` from the [latest release](https://github.com/bruno-srio/lumen/releases/latest) and install it:
+Download `lumen-0.2.0.flatpak` from the [latest release](https://github.com/bruno-srio/lumen/releases/latest) and install it:
 
 ```sh
-flatpak install --user lumen-0.1.1.flatpak
+flatpak install --user lumen-0.2.0.flatpak
 flatpak run io.github.bruno_srio.Lumen
 ```
 
@@ -33,15 +33,18 @@ A Flathub listing is planned after the next release. Until then, the GitHub rele
 
 ## What it does
 
-- Discovers lights and reconnects to ones it has seen before.
-- Remembers the names you choose, even when an IP address changes.
-- Shows only the controls each bulb actually supports.
+- Discovers lights and reconnects to ones it has seen before, or adds one by IP address.
+- Remembers the names you choose, even when an IP address changes. A name can also be stored on the light.
+- Shows only the controls each bulb actually supports, including color temperature.
+- Groups lights so one switch, slider, or color applies to the whole room.
+- Saves colors, runs candle, sunrise, and color-loop effects, and sets a sleep timer.
+- Turns every reachable light on or off at once.
 - Dims a card when a light goes away, and reconnects when it returns.
 - Slows slider changes so a drag does not hit the bulb's command limit.
 
 ## Enable LAN Control
 
-Each bulb has LAN Control (sometimes called Developer Mode) turned off until you enable it in the Yeelight mobile app, in that light's settings. The computer and the lights must be on the same network. Details are in [docs/TESTING.md](docs/TESTING.md).
+Each bulb has LAN Control (sometimes called Developer Mode) turned off until you enable it in the Yeelight mobile app, in that light's settings. The computer and the lights must be on the same network. The steps are in [docs/LAN-CONTROL.md](docs/LAN-CONTROL.md).
 
 ## Build from source
 

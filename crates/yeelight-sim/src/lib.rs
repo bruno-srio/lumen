@@ -55,6 +55,11 @@ impl BulbSpec {
                 "set_hsv",
                 "set_ct_abx",
                 "set_name",
+                "start_cf",
+                "stop_cf",
+                "cron_add",
+                "cron_del",
+                "cron_get",
             ],
         )
     }
@@ -80,6 +85,11 @@ impl BulbSpec {
                 "set_bright",
                 "set_ct_abx",
                 "set_name",
+                "start_cf",
+                "stop_cf",
+                "cron_add",
+                "cron_del",
+                "cron_get",
             ],
         )
     }
@@ -144,6 +154,8 @@ pub struct BulbSnapshot {
     pub hue: u16,
     pub sat: u8,
     pub name: String,
+    pub flowing: bool,
+    pub delayoff: u32,
     pub tcp_addr: SocketAddr,
     pub applied_commands: u64,
 }
@@ -180,6 +192,7 @@ struct LiveState {
     sat: u8,
     name: String,
     flowing: bool,
+    delayoff: u32,
 }
 
 pub struct SimNetwork {
@@ -269,6 +282,8 @@ impl SimBulb {
             hue: state.hue,
             sat: state.sat,
             name: state.name,
+            flowing: state.flowing,
+            delayoff: state.delayoff,
             tcp_addr: self.tcp_addr(),
             applied_commands: self.inner.applied.load(Ordering::Relaxed),
         }
@@ -321,6 +336,7 @@ async fn spawn_bulb(
             sat: spec.sat,
             name: spec.name.clone(),
             flowing: false,
+            delayoff: 0,
         }),
         spec,
         notes: Mutex::new(Vec::new()),
@@ -636,7 +652,40 @@ fn apply_command(
                 ..LightState::default()
             })
         }
-        "set_default" | "stop_cf" => CommandOutcome::Ok,
+        "start_cf" => {
+            if !state.power {
+                return CommandOutcome::Error("device is off");
+            }
+            state.flowing = true;
+            CommandOutcome::Changed(LightState {
+                flowing: Some(true),
+                ..LightState::default()
+            })
+        }
+        "stop_cf" => {
+            state.flowing = false;
+            CommandOutcome::Changed(LightState {
+                flowing: Some(false),
+                ..LightState::default()
+            })
+        }
+        "cron_add" => {
+            let minutes = arg_u32(params, 1).unwrap_or(0);
+            state.delayoff = minutes;
+            CommandOutcome::Changed(LightState {
+                delayoff: Some(minutes),
+                ..LightState::default()
+            })
+        }
+        "cron_del" => {
+            state.delayoff = 0;
+            CommandOutcome::Changed(LightState {
+                delayoff: Some(0),
+                ..LightState::default()
+            })
+        }
+        "cron_get" => CommandOutcome::Props(vec![state.delayoff.to_string()]),
+        "set_default" => CommandOutcome::Ok,
         _ => CommandOutcome::Error("unsupported method"),
     }
 }
@@ -662,6 +711,7 @@ fn property(state: &LiveState, name: &str) -> String {
         "color_mode" => state.color_mode.to_string(),
         "name" => state.name.clone(),
         "flowing" => if state.flowing { "1" } else { "0" }.to_string(),
+        "delayoff" => state.delayoff.to_string(),
         _ => String::new(),
     }
 }

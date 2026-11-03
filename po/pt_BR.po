@@ -1,0 +1,462 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the lumen package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: lumen 0.2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-03 04:01+0000\n"
+"PO-Revision-Date: 2026-11-03 04:05+0000\n"
+"Last-Translator: Bruno Ribeiro <contatobrunosrio@gmail.com>\n"
+"Language-Team: Portuguese (Brazil) <pt_BR@li.org>\n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/model/device_object.rs:276
+msgid "Connecting…"
+msgstr "Conectando…"
+
+#: src/model/device_object.rs:280
+msgid "Unavailable"
+msgstr "Indisponível"
+
+#: src/model/device_object.rs:285
+msgid "Effect running"
+msgstr "Efeito em execução"
+
+#: src/model/device_object.rs:287
+msgid "Off in {} min"
+msgstr "Desliga em {} min"
+
+#: src/model/device_object.rs:289
+msgid "Off"
+msgstr "Desligada"
+
+#: src/model/device_object.rs:291 src/model/device_object.rs:293
+msgid "On"
+msgstr "Ligada"
+
+#: src/model/device_object.rs:307 src/widgets/device_card.rs:303
+#: src/widgets/device_card.blp:43 src/widgets/group_card.blp:43
+msgid "Power"
+msgstr "Energia"
+
+#: src/model/device_object.rs:310 src/widgets/device_card.rs:302
+#: src/widgets/device_card.blp:58 src/widgets/group_card.blp:50
+msgid "Brightness"
+msgstr "Brilho"
+
+#: src/model/device_object.rs:313 src/widgets/device_card.blp:78
+#: src/widgets/device_card.blp:79 src/widgets/color_popover.blp:14
+#: src/widgets/group_card.blp:61 src/widgets/group_card.blp:62
+msgid "Color"
+msgstr "Cor"
+
+#: src/model/device_object.rs:316
+msgid "Color temperature"
+msgstr "Temperatura de cor"
+
+#: src/model/device_object.rs:319 src/widgets/device_card.rs:331
+msgid "Effects"
+msgstr "Efeitos"
+
+#: src/model/device_object.rs:322
+msgid "Sleep timer"
+msgstr "Temporizador"
+
+#: src/model/device_object.rs:325
+msgid "No controls reported"
+msgstr "Nenhum controle informado"
+
+#: src/model/device_object.rs:344 src/widgets/window.rs:489
+msgid "The light did not respond."
+msgstr "A lâmpada não respondeu."
+
+#: src/model/device_object.rs:346
+msgid "The light refused the connection. Enable LAN Control in the Yeelight app."
+msgstr "A lâmpada recusou a conexão. Ative o Controle LAN no aplicativo Yeelight."
+
+#: src/model/device_object.rs:348
+msgid "Network error."
+msgstr "Erro de rede."
+
+#: src/model/device_object.rs:349
+msgid "The light closed the connection."
+msgstr "A lâmpada encerrou a conexão."
+
+#: src/model/device_object.rs:351
+msgid "Not responding — turn the light off and on at the wall switch."
+msgstr "Sem resposta — desligue e ligue a lâmpada no interruptor."
+
+#: src/widgets/mod.rs:35
+msgid "General"
+msgstr "Geral"
+
+#: src/widgets/mod.rs:37 src/widgets/mod.rs:40
+msgid "Search for Lights"
+msgstr "Procurar lâmpadas"
+
+#: src/widgets/mod.rs:42
+msgid "Rename Focused Light"
+msgstr "Renomear a lâmpada em foco"
+
+#: src/widgets/mod.rs:46 src/widgets/window.rs:195
+msgid "Keyboard Shortcuts"
+msgstr "Atalhos de teclado"
+
+#: src/widgets/mod.rs:50
+msgid "Close Window"
+msgstr "Fechar janela"
+
+#: src/widgets/mod.rs:54 src/widgets/window.rs:188
+msgid "All Lights On"
+msgstr "Ligar todas"
+
+#: src/widgets/mod.rs:58 src/widgets/window.rs:189
+msgid "All Lights Off"
+msgstr "Desligar todas"
+
+#: src/widgets/mod.rs:61
+msgid "Quit"
+msgstr "Sair"
+
+#: src/widgets/mod.rs:72
+msgid "Control Yeelight lights on your local network."
+msgstr "Controle lâmpadas Yeelight na rede local."
+
+#: src/widgets/window.rs:191
+msgid "Add Light by Address…"
+msgstr "Adicionar lâmpada pelo endereço…"
+
+#: src/widgets/window.rs:194
+msgid "New Group…"
+msgstr "Novo grupo…"
+
+#: src/widgets/window.rs:196
+msgid "About Lumen"
+msgstr "Sobre o Lumen"
+
+#: src/widgets/window.rs:484
+msgid "Light"
+msgstr "Lâmpada"
+
+#: src/widgets/window.rs:487
+msgid "This light does not support that control."
+msgstr "Esta lâmpada não oferece esse controle."
+
+#: src/widgets/window.rs:490
+msgid "The light rejected the change."
+msgstr "A lâmpada recusou a alteração."
+
+#: src/widgets/window.rs:496
+msgid "No light answered at {}. Check LAN Control."
+msgstr "Nenhuma lâmpada respondeu em {}. Verifique o Controle LAN."
+
+#: src/widgets/window.rs:623
+msgid "Forgot this light. It will reappear if it is still on the network."
+msgstr "Lâmpada esquecida. Ela reaparece se ainda estiver na rede."
+
+#: src/widgets/window.rs:655
+msgid "Saved {}"
+msgstr "Salva {}"
+
+#: src/widgets/window.rs:662
+msgid "White {}K"
+msgstr "Branco {}K"
+
+#: src/widgets/window.rs:680
+msgid "Add Light by Address"
+msgstr "Adicionar lâmpada pelo endereço"
+
+#: src/widgets/window.rs:682
+msgid "Enter the light's IP address. LAN Control must be enabled."
+msgstr "Informe o endereço IP da lâmpada. O Controle LAN precisa estar ativado."
+
+#: src/widgets/window.rs:690 src/widgets/rename_dialog.blp:24
+#: src/widgets/group_dialog.blp:32
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: src/widgets/window.rs:691
+msgid "Add"
+msgstr "Adicionar"
+
+#: src/widgets/window.rs:717
+msgid "Enter an IP address, like 192.168.1.20."
+msgstr "Informe um endereço IP, como 192.168.1.20."
+
+#: src/widgets/window.rs:723
+msgid "Looking for a light at {}…"
+msgstr "Procurando uma lâmpada em {}…"
+
+#: src/widgets/window.rs:752 src/widgets/group_card.blp:36
+msgid "Edit Group"
+msgstr "Editar grupo"
+
+#: src/widgets/window.rs:754
+msgid "New Group"
+msgstr "Novo grupo"
+
+#: src/widgets/device_card.rs:327
+msgid "Candle"
+msgstr "Vela"
+
+#: src/widgets/device_card.rs:328
+msgid "Sunrise"
+msgstr "Amanhecer"
+
+#: src/widgets/device_card.rs:329
+msgid "Color Loop"
+msgstr "Ciclo de cores"
+
+#: src/widgets/device_card.rs:330
+msgid "Stop Effect"
+msgstr "Parar efeito"
+
+#: src/widgets/device_card.rs:333
+msgid "15 minutes"
+msgstr "15 minutos"
+
+#: src/widgets/device_card.rs:334
+msgid "30 minutes"
+msgstr "30 minutos"
+
+#: src/widgets/device_card.rs:335
+msgid "60 minutes"
+msgstr "60 minutos"
+
+#: src/widgets/device_card.rs:336
+msgid "Cancel Timer"
+msgstr "Cancelar temporizador"
+
+#: src/widgets/device_card.rs:337
+msgid "Sleep Timer"
+msgstr "Temporizador"
+
+#: src/widgets/device_card.rs:338
+msgid "Rename…"
+msgstr "Renomear…"
+
+#: src/widgets/device_card.rs:339 src/widgets/device_details.blp:5
+msgid "Device Details"
+msgstr "Detalhes do dispositivo"
+
+#: src/widgets/color_popover.rs:246
+msgid "Red"
+msgstr "Vermelho"
+
+#: src/widgets/color_popover.rs:247
+msgid "Orange"
+msgstr "Laranja"
+
+#: src/widgets/color_popover.rs:248
+msgid "Yellow"
+msgstr "Amarelo"
+
+#: src/widgets/color_popover.rs:249
+msgid "Green"
+msgstr "Verde"
+
+#: src/widgets/color_popover.rs:250
+msgid "Cyan"
+msgstr "Ciano"
+
+#: src/widgets/color_popover.rs:251
+msgid "Blue"
+msgstr "Azul"
+
+#: src/widgets/color_popover.rs:252
+msgid "Purple"
+msgstr "Roxo"
+
+#: src/widgets/color_popover.rs:253
+msgid "Pink"
+msgstr "Rosa"
+
+#: src/widgets/color_popover.rs:254 src/widgets/color_popover.blp:111
+msgid "White"
+msgstr "Branco"
+
+#: src/widgets/color_popover.rs:307
+msgid "Custom Color"
+msgstr "Cor personalizada"
+
+#: src/widgets/rename_dialog.rs:65
+msgid "Names stored on the light must use only English letters, numbers, and symbols."
+msgstr "O nome gravado na lâmpada só pode usar letras, números e símbolos ingleses."
+
+#: src/widgets/group_card.rs:110
+msgid "No lights"
+msgstr "Nenhuma lâmpada"
+
+#: src/widgets/group_card.rs:112
+msgid "{on} of {total} on"
+msgstr "{on} de {total} ligadas"
+
+#: src/widgets/window.blp:5
+msgid "Lumen"
+msgstr "Lumen"
+
+#: src/widgets/window.blp:18 src/widgets/window.blp:56
+msgid "Search Again"
+msgstr "Procurar de novo"
+
+#: src/widgets/window.blp:25
+msgid "Main Menu"
+msgstr "Menu principal"
+
+#: src/widgets/window.blp:37
+msgid "Looking for lights…"
+msgstr "Procurando lâmpadas…"
+
+#: src/widgets/window.blp:38
+msgid "Searching the local network for Yeelight lights."
+msgstr "Procurando lâmpadas Yeelight na rede local."
+
+#: src/widgets/window.blp:46
+msgid "No Lights Found"
+msgstr "Nenhuma lâmpada encontrada"
+
+#: src/widgets/window.blp:47
+msgid "Turn on LAN Control for each light in the Yeelight app, then make sure this computer is on the same network."
+msgstr "Ative o Controle LAN de cada lâmpada no aplicativo Yeelight e confira se este computador está na mesma rede."
+
+#: src/widgets/window.blp:63
+msgid "How to Enable LAN Control"
+msgstr "Como ativar o Controle LAN"
+
+#: src/widgets/device_card.blp:85
+msgid "Device Menu"
+msgstr "Menu do dispositivo"
+
+#: src/widgets/color_popover.blp:34
+msgid "Save Color"
+msgstr "Salvar cor"
+
+#: src/widgets/color_popover.blp:58
+msgid "Hue"
+msgstr "Matiz"
+
+#: src/widgets/color_popover.blp:81
+msgid "Saturation"
+msgstr "Saturação"
+
+#: src/widgets/color_popover.blp:100
+msgid "Custom…"
+msgstr "Personalizar…"
+
+#: src/widgets/color_popover.blp:120
+msgid "Warm"
+msgstr "Quente"
+
+#: src/widgets/color_popover.blp:139
+msgid "Cool"
+msgstr "Frio"
+
+#: src/widgets/rename_dialog.blp:5
+msgid "Rename Light"
+msgstr "Renomear lâmpada"
+
+#: src/widgets/rename_dialog.blp:6
+msgid "This name is stored on this computer. Leave it empty to use the light's own name."
+msgstr "Este nome fica neste computador. Deixe em branco para usar o nome da própria lâmpada."
+
+#: src/widgets/rename_dialog.blp:14
+msgid "Bedroom Ceiling"
+msgstr "Teto do quarto"
+
+#: src/widgets/rename_dialog.blp:19
+msgid "Also save this name on the light"
+msgstr "Também gravar este nome na lâmpada"
+
+#: src/widgets/rename_dialog.blp:25 src/widgets/group_dialog.blp:34
+msgid "Save"
+msgstr "Salvar"
+
+#: src/widgets/device_details.blp:15 src/widgets/device_details.blp:18
+msgid "Name"
+msgstr "Nome"
+
+#: src/widgets/device_details.blp:23
+msgid "Network"
+msgstr "Rede"
+
+#: src/widgets/device_details.blp:26
+msgid "Address"
+msgstr "Endereço"
+
+#: src/widgets/device_details.blp:30
+msgid "State"
+msgstr "Estado"
+
+#: src/widgets/device_details.blp:35
+msgid "Device"
+msgstr "Dispositivo"
+
+#: src/widgets/device_details.blp:38
+msgid "Model"
+msgstr "Modelo"
+
+#: src/widgets/device_details.blp:42
+msgid "Firmware"
+msgstr "Firmware"
+
+#: src/widgets/device_details.blp:46
+msgid "Identifier"
+msgstr "Identificador"
+
+#: src/widgets/device_details.blp:50
+msgid "Features"
+msgstr "Recursos"
+
+#: src/widgets/device_details.blp:55
+msgid "Stored on this computer"
+msgstr "Gravado neste computador"
+
+#: src/widgets/device_details.blp:58
+msgid "Forget Device"
+msgstr "Esquecer dispositivo"
+
+#: src/widgets/window.blp:83
+msgid "Groups"
+msgstr "Grupos"
+
+#: src/widgets/group_dialog.blp:5
+msgid "Group"
+msgstr "Grupo"
+
+#: src/widgets/group_dialog.blp:6
+msgid "Choose a name and the lights that belong together."
+msgstr "Escolha um nome e as lâmpadas que ficam juntas."
+
+#: src/widgets/group_dialog.blp:14
+msgid "Living Room"
+msgstr "Sala"
+
+#: src/widgets/group_dialog.blp:33
+msgid "Delete Group"
+msgstr "Excluir grupo"
+
+#: data/io.github.bruno_srio.Lumen.desktop.in:3
+msgid "Light Controller"
+msgstr "Controle de lâmpadas"
+
+#: data/io.github.bruno_srio.Lumen.desktop.in:4
+msgid "Control Yeelight lights on your local network"
+msgstr "Controle lâmpadas Yeelight na rede local"
+
+#: data/io.github.bruno_srio.Lumen.metainfo.xml.in:18
+msgid "Lumen finds Yeelight lights on the local network and lets you turn them on or off, change brightness, set a color or a white temperature, save colors, group lights, run an effect, and set a sleep timer. It is a native GNOME application and does not need a Yeelight account or an internet connection."
+msgstr "O Lumen encontra lâmpadas Yeelight na rede local e permite ligá-las ou desligá-las, mudar o brilho, escolher uma cor ou uma temperatura de branco, salvar cores, agrupar lâmpadas, iniciar um efeito e definir um temporizador. É um aplicativo nativo do GNOME e não precisa de uma conta Yeelight nem de internet."
+
+#: data/io.github.bruno_srio.Lumen.metainfo.xml.in:21
+msgid "LAN Control has to be enabled for each light in the Yeelight mobile app. Names you choose are stored on this computer and stay attached to the light even if its IP address changes."
+msgstr "O Controle LAN precisa ser ativado em cada lâmpada no aplicativo Yeelight. Os nomes escolhidos ficam neste computador e continuam ligados à lâmpada mesmo se o endereço IP mudar."
+
+#: data/io.github.bruno_srio.Lumen.metainfo.xml.in:24
+msgid "Yeelight is a trademark of its owner. Lumen is an independent project and is not affiliated with Yeelight."
+msgstr "Yeelight é uma marca de seu titular. O Lumen é um projeto independente e não é afiliado à Yeelight."

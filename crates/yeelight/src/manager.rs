@@ -1,6 +1,7 @@
 use crate::capabilities::Capabilities;
 use crate::connection::{
-    run_device, ColorUpdate, ConnectionState, DeviceCommand, DeviceEvent, FailReason, LinkConfig,
+    run_device, ColorUpdate, ConnectionState, DeviceCommand, DeviceEvent, EffectPreset, FailReason,
+    LinkConfig,
 };
 use crate::discovery::{Discovery, DiscoveryConfig};
 use crate::discovery_msg::DISCOVERY_PORT;
@@ -8,8 +9,8 @@ use crate::lan::is_lan_ipv4;
 use crate::props::{DeviceId, LightState};
 use crate::DiscoveryInfo;
 use async_channel::{Receiver, Sender};
-use std::collections::HashMap;
-use std::net::SocketAddr;
+use std::collections::{HashMap, HashSet};
+use std::net::{Ipv4Addr, SocketAddr};
 use std::time::Duration;
 use tokio::sync::mpsc;
 use tracing::{debug, warn};
@@ -95,6 +96,24 @@ pub enum BackendCommand {
         id: DeviceId,
         color: ColorUpdate,
     },
+    SetBulbName {
+        id: DeviceId,
+        name: String,
+    },
+    StartEffect {
+        id: DeviceId,
+        preset: EffectPreset,
+    },
+    StopEffect {
+        id: DeviceId,
+    },
+    SleepTimer {
+        id: DeviceId,
+        minutes: Option<u32>,
+    },
+    Probe {
+        addr: SocketAddr,
+    },
     Forget {
         id: DeviceId,
     },
@@ -115,6 +134,9 @@ pub enum BackendEvent {
     CommandFailed {
         id: DeviceId,
         reason: FailReason,
+    },
+    ProbeFailed {
+        addr: String,
     },
     ScanFinished,
 }
@@ -142,7 +164,9 @@ pub async fn run(
 
     let mut devices: HashMap<DeviceId, Running> = HashMap::new();
     let mut scanning = false;
+    let mut pending_probes: HashSet<Ipv4Addr> = HashSet::new();
     let (scan_done_tx, mut scan_done_rx) = mpsc::channel::<()>(2);
+    let (probe_fail_tx, mut probe_fail_rx) = mpsc::channel::<Ipv4Addr>(8);
 
     loop {
         tokio::select! {
@@ -190,6 +214,44 @@ pub async fn run(
                     Ok(BackendCommand::SetColor { id, color }) => {
                         send_device(&devices, &id, DeviceCommand::SetColor(color));
                     }
+                    Ok(BackendCommand::SetBulbName { id, name }) => {
+                        send_device(&devices, &id, DeviceCommand::SetBulbName(name));
+                    }
+                    Ok(BackendCommand::StartEffect { id, preset }) => {
+                        send_device(&devices, &id, DeviceCommand::StartEffect(preset));
+                    }
+                    Ok(BackendCommand::StopEffect { id }) => {
+                        send_device(&devices, &id, DeviceCommand::StopEffect);
+                    }
+                    Ok(BackendCommand::SleepTimer { id, minutes }) => {
+                        send_device(&devices, &id, DeviceCommand::SleepTimer(minutes));
+                    }
+                    Ok(BackendCommand::Probe { addr }) => {
+                        let SocketAddr::V4(ipv4) = addr else {
+                            let _ = events.send(BackendEvent::ProbeFailed { addr: addr.to_string() }).await;
+                            continue;
+                        };
+                        if !crate::lan::is_lan_ipv4(*ipv4.ip()) {
+                            let _ = events.send(BackendEvent::ProbeFailed { addr: addr.to_string() }).await;
+                            continue;
+                        }
+                        let Some(discovery) = discovery.clone() else {
+                            let _ = events.send(BackendEvent::ProbeFailed { addr: addr.to_string() }).await;
+                            continue;
+                        };
+                        pending_probes.insert(*ipv4.ip());
+                        if discovery.probe(addr).await.is_err() {
+                            pending_probes.remove(ipv4.ip());
+                            let _ = events.send(BackendEvent::ProbeFailed { addr: addr.to_string() }).await;
+                            continue;
+                        }
+                        let fail = probe_fail_tx.clone();
+                        let ip = *ipv4.ip();
+                        tokio::spawn(async move {
+                            tokio::time::sleep(Duration::from_secs(3)).await;
+                            let _ = fail.send(ip).await;
+                        });
+                    }
                     Ok(BackendCommand::Forget { id }) => {
                         if let Some(running) = devices.remove(&id) {
                             let _ = running.tx.try_send(DeviceCommand::Shutdown);
@@ -201,8 +263,16 @@ pub async fn run(
                 scanning = false;
                 let _ = events.send(BackendEvent::ScanFinished).await;
             }
+            Some(ip) = probe_fail_rx.recv() => {
+                if pending_probes.remove(&ip) {
+                    let _ = events.send(BackendEvent::ProbeFailed { addr: ip.to_string() }).await;
+                }
+            }
             Some(packet) = packet_rx.recv() => {
                 let info = packet.info;
+                if let SocketAddr::V4(location) = info.location {
+                    pending_probes.remove(location.ip());
+                }
                 let caps = Capabilities::from_support(&info.support, &info.model);
                 let _ = events.send(BackendEvent::DeviceSeen(info.clone())).await;
                 let _ = events.send(BackendEvent::StateChanged {
@@ -309,5 +379,6 @@ fn state_from_discovery(info: &DiscoveryInfo) -> LightState {
             Some(info.name.clone())
         },
         flowing: None,
+        delayoff: None,
     }
 }

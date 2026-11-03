@@ -31,6 +31,20 @@ impl DeviceList {
         self.len() == 0
     }
 
+    pub fn iter(&self) -> Vec<DeviceObject> {
+        let mut devices = Vec::new();
+        for index in 0..self.store.n_items() {
+            if let Some(device) = self
+                .store
+                .item(index)
+                .and_then(|item| item.downcast::<DeviceObject>().ok())
+            {
+                devices.push(device);
+            }
+        }
+        devices
+    }
+
     pub fn find(&self, id: &str) -> Option<DeviceObject> {
         for index in 0..self.store.n_items() {
             let Some(device) = self

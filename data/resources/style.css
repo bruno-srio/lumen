@@ -38,3 +38,9 @@ button.color-swatch.swatch-blue { background-color: #3d6fe0; }
 button.color-swatch.swatch-purple { background-color: #8a4fd4; }
 button.color-swatch.swatch-pink { background-color: #d4538c; }
 button.color-swatch.swatch-white { background-color: #f4f1ea; }
+
+scale.temperature trough {
+  background-image: linear-gradient(to right, rgb(255, 166, 77), rgb(255, 244, 229), rgb(220, 235, 255));
+  border-radius: 999px;
+  min-height: 10px;
+}

@@ -1,12 +1,16 @@
 mod color_popover;
 mod device_card;
 mod device_details;
+mod group_card;
+mod group_dialog;
 mod rename_dialog;
 mod window;
 
-pub use color_popover::ColorPopover;
-pub use device_card::DeviceCard;
+pub use color_popover::{ColorPopover, TintChoice};
+pub use device_card::{CardHooks, DeviceCard};
 pub use device_details::DeviceDetails;
+pub use group_card::{GroupCard, GroupHooks};
+pub use group_dialog::GroupDialog;
 pub use rename_dialog::RenameDialog;
 pub use window::Window;
 
@@ -45,6 +49,14 @@ pub fn show_shortcuts(parent: &impl IsA<gtk::Widget>) {
     section.add(adw::ShortcutsItem::new(
         &gettext("Close Window"),
         "<primary>w",
+    ));
+    section.add(adw::ShortcutsItem::new(
+        &gettext("All Lights On"),
+        "<primary><shift>o",
+    ));
+    section.add(adw::ShortcutsItem::new(
+        &gettext("All Lights Off"),
+        "<primary><shift>f",
     ));
     section.add(adw::ShortcutsItem::new(&gettext("Quit"), "<primary>q"));
     dialog.add(section);

@@ -12,6 +12,8 @@ fn main() {
         "color_popover.blp",
         "rename_dialog.blp",
         "device_details.blp",
+        "group_card.blp",
+        "group_dialog.blp",
     ];
     println!("cargo:rerun-if-changed=src/widgets");
     println!("cargo:rerun-if-changed=data/resources/style.css");

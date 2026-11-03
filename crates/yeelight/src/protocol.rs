@@ -54,6 +54,16 @@ pub enum Command {
     SetName {
         name: String,
     },
+    StartCf {
+        count: i32,
+        action: i32,
+        expression: String,
+    },
+    StopCf,
+    CronAdd {
+        minutes: u32,
+    },
+    CronDel,
 }
 
 impl Command {
@@ -159,6 +169,14 @@ pub fn encode_command(id: u32, command: &Command) -> String {
             duration_ms,
         } => ("set_ct_abx", json!([kelvin, effect.as_str(), duration_ms])),
         Command::SetName { name } => ("set_name", json!([name])),
+        Command::StartCf {
+            count,
+            action,
+            expression,
+        } => ("start_cf", json!([count, action, expression])),
+        Command::StopCf => ("stop_cf", json!([])),
+        Command::CronAdd { minutes } => ("cron_add", json!([0, minutes])),
+        Command::CronDel => ("cron_del", json!([0])),
     };
     format!(
         "{}\r\n",
@@ -212,6 +230,9 @@ pub fn encode_notification(state: &LightState) -> String {
     }
     if let Some(flowing) = state.flowing {
         params.insert("flowing".into(), json!(if flowing { "1" } else { "0" }));
+    }
+    if let Some(delayoff) = state.delayoff {
+        params.insert("delayoff".into(), json!(delayoff.to_string()));
     }
     format!("{}\r\n", json!({"method": "props", "params": params}))
 }

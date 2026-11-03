@@ -1,16 +1,20 @@
-use super::{show_about, show_shortcuts, DeviceDetails, RenameDialog};
+use super::{
+    show_about, show_shortcuts, CardHooks, DeviceDetails, GroupCard, GroupDialog, GroupHooks,
+    RenameDialog, TintChoice,
+};
 use crate::backend::Backend;
 use crate::config::APP_ID;
 use crate::model::{DeviceList, DeviceObject};
-use crate::store::DeviceStore;
+use crate::store::{DeviceStore, StoredGroup, StoredPreset};
 use crate::widgets::DeviceCard;
+use adw::prelude::{AdwDialogExt, AlertDialogExt};
 use gettextrs::gettext;
 use glib::subclass::prelude::*;
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
 use std::cell::{Cell, OnceCell};
-use std::net::SocketAddr;
-use yeelight::{BackendCommand, BackendEvent, Capabilities, ColorUpdate, DeviceId};
+use std::net::{Ipv4Addr, SocketAddr};
+use yeelight::{BackendCommand, BackendEvent, Capabilities, ColorUpdate, DeviceId, EffectPreset};
 
 mod imp {
     use super::*;
@@ -28,6 +32,10 @@ mod imp {
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub devices_box: TemplateChild<gtk::FlowBox>,
+        #[template_child]
+        pub groups_heading: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub groups_box: TemplateChild<gtk::FlowBox>,
         pub backend: OnceCell<Backend>,
         pub store: OnceCell<DeviceStore>,
         pub devices: DeviceList,
@@ -86,6 +94,7 @@ impl Window {
         self.imp().store.set(store).ok();
         self.imp().backend.set(backend).ok();
         self.bind_devices();
+        self.rebuild_groups();
         self.refresh();
 
         let window = self.downgrade();
@@ -157,10 +166,34 @@ impl Window {
             }
         });
         self.add_action(&about);
+
+        self.add_simple("all-on", |window| window.set_all_power(true));
+        self.add_simple("all-off", |window| window.set_all_power(false));
+        self.add_simple("add-light", |window| window.prompt_probe());
+        self.add_simple("new-group", |window| window.edit_group(None));
+        self.add_simple("lan-help", |window| window.open_lan_help());
+    }
+
+    fn add_simple(&self, name: &str, callback: impl Fn(&Window) + 'static) {
+        let action = gio::SimpleAction::new(name, None);
+        let window = self.downgrade();
+        action.connect_activate(move |_, _| {
+            if let Some(window) = window.upgrade() {
+                callback(&window);
+            }
+        });
+        self.add_action(&action);
     }
 
     fn install_menu(&self) {
         let menu = gio::Menu::new();
+        menu.append(Some(&gettext("All Lights On")), Some("win.all-on"));
+        menu.append(Some(&gettext("All Lights Off")), Some("win.all-off"));
+        menu.append(
+            Some(&gettext("Add Light by Address…")),
+            Some("win.add-light"),
+        );
+        menu.append(Some(&gettext("New Group…")), Some("win.new-group"));
         menu.append(Some(&gettext("Keyboard Shortcuts")), Some("win.shortcuts"));
         menu.append(Some(&gettext("About Lumen")), Some("win.about"));
         self.imp().menu_button.set_menu_model(Some(&menu));
@@ -196,33 +229,87 @@ impl Window {
                 let details_id = id.clone();
                 let power_id = id.clone();
                 let brightness_id = id.clone();
-                let color_id = id;
+                let color_id = id.clone();
                 let card = DeviceCard::new(
                     &device,
-                    move || {
-                        if let Some(window) = window_rename.upgrade() {
-                            window.rename(&rename_id);
-                        }
-                    },
-                    move || {
-                        if let Some(window) = window_details.upgrade() {
-                            window.show_details(&details_id);
-                        }
-                    },
-                    move |on| {
-                        if let Some(window) = window_power.upgrade() {
-                            window.send_power(&power_id, on);
-                        }
-                    },
-                    move |brightness| {
-                        if let Some(window) = window_brightness.upgrade() {
-                            window.send_brightness(&brightness_id, brightness);
-                        }
-                    },
-                    move |hue, sat| {
-                        if let Some(window) = window_color.upgrade() {
-                            window.send_color(&color_id, hue, sat);
-                        }
+                    CardHooks {
+                        rename: Box::new(move || {
+                            if let Some(window) = window_rename.upgrade() {
+                                window.rename(&rename_id);
+                            }
+                        }),
+                        details: Box::new(move || {
+                            if let Some(window) = window_details.upgrade() {
+                                window.show_details(&details_id);
+                            }
+                        }),
+                        power: Box::new(move |on| {
+                            if let Some(window) = window_power.upgrade() {
+                                window.send_power(&power_id, on);
+                            }
+                        }),
+                        brightness: Box::new(move |brightness| {
+                            if let Some(window) = window_brightness.upgrade() {
+                                window.send_brightness(&brightness_id, brightness);
+                            }
+                        }),
+                        tint: Box::new(move |choice| {
+                            if let Some(window) = window_color.upgrade() {
+                                window.send_tint(&color_id, choice);
+                            }
+                        }),
+                        effect: {
+                            let window = window.clone();
+                            let id = id.clone();
+                            Box::new(move |preset| {
+                                if let Some(window) = window.upgrade() {
+                                    window.send_effect(&id, preset);
+                                }
+                            })
+                        },
+                        stop_effect: {
+                            let window = window.clone();
+                            let id = id.clone();
+                            Box::new(move || {
+                                if let Some(window) = window.upgrade() {
+                                    window.send_stop_effect(&id);
+                                }
+                            })
+                        },
+                        sleep: {
+                            let window = window.clone();
+                            let id = id.clone();
+                            Box::new(move |minutes| {
+                                if let Some(window) = window.upgrade() {
+                                    window.send_sleep(&id, minutes);
+                                }
+                            })
+                        },
+                        save_preset: {
+                            let window = window.clone();
+                            Box::new(move |choice| {
+                                if let Some(window) = window.upgrade() {
+                                    window.remember_preset(choice);
+                                }
+                            })
+                        },
+                        remove_preset: {
+                            let window = window.clone();
+                            Box::new(move |index| {
+                                if let Some(window) = window.upgrade() {
+                                    window.forget_preset(index);
+                                }
+                            })
+                        },
+                        presets: {
+                            let window = window.clone();
+                            Box::new(move || {
+                                window
+                                    .upgrade()
+                                    .map(|window| window.preset_choices())
+                                    .unwrap_or_default()
+                            })
+                        },
                     },
                 );
                 card.upcast()
@@ -273,12 +360,63 @@ impl Window {
         }
     }
 
-    fn send_color(&self, id: &str, hue: u16, sat: u8) {
+    fn send_tint(&self, id: &str, choice: TintChoice) {
+        let color = match choice {
+            TintChoice::Hsv { hue, sat } => ColorUpdate::Hsv { hue, sat },
+            TintChoice::Temperature(kelvin) => ColorUpdate::Temperature(kelvin),
+        };
         if let Some(backend) = self.imp().backend.get() {
             backend.send(BackendCommand::SetColor {
                 id: DeviceId::new(id),
-                color: ColorUpdate::Hsv { hue, sat },
+                color,
             });
+        }
+    }
+
+    fn send_effect(&self, id: &str, preset: EffectPreset) {
+        if let Some(device) = self.imp().devices.find(id) {
+            device.set_flowing(true);
+            device.refresh_status();
+        }
+        if let Some(backend) = self.imp().backend.get() {
+            backend.send(BackendCommand::StartEffect {
+                id: DeviceId::new(id),
+                preset,
+            });
+        }
+    }
+
+    fn send_stop_effect(&self, id: &str) {
+        if let Some(device) = self.imp().devices.find(id) {
+            device.set_flowing(false);
+            device.refresh_status();
+        }
+        if let Some(backend) = self.imp().backend.get() {
+            backend.send(BackendCommand::StopEffect {
+                id: DeviceId::new(id),
+            });
+        }
+    }
+
+    fn send_sleep(&self, id: &str, minutes: Option<u32>) {
+        if let Some(device) = self.imp().devices.find(id) {
+            device.set_delayoff(minutes.unwrap_or(0));
+            device.refresh_status();
+        }
+        if let Some(backend) = self.imp().backend.get() {
+            backend.send(BackendCommand::SleepTimer {
+                id: DeviceId::new(id),
+                minutes,
+            });
+        }
+    }
+
+    fn set_all_power(&self, on: bool) {
+        for device in self.imp().devices.iter() {
+            if device.online() && device.has_power() {
+                device.user_power(on);
+                self.send_power(&device.device_id(), on);
+            }
         }
     }
 
@@ -355,6 +493,11 @@ impl Window {
                 };
                 self.toast(&format!("{name}: {detail}"));
             }
+            BackendEvent::ProbeFailed { addr } => {
+                self.toast(
+                    &gettext("No light answered at {}. Check LAN Control.").replace("{}", &addr),
+                );
+            }
             BackendEvent::ScanFinished => {
                 self.imp().scan_done.set(true);
                 self.set_scanning(false);
@@ -387,9 +530,10 @@ impl Window {
         } else {
             device.custom_name()
         };
+        let offer_bulb = device.supports_set_name();
         let window = self.downgrade();
         let id = id.to_string();
-        RenameDialog::present_for(self, &current, move |name| {
+        RenameDialog::present_for(self, &current, offer_bulb, move |name, save_on_bulb| {
             let Some(window) = window.upgrade() else {
                 return;
             };
@@ -400,14 +544,21 @@ impl Window {
             let custom = if trimmed.is_empty() {
                 None
             } else {
-                Some(trimmed)
+                Some(trimmed.clone())
             };
             device.assign_custom_name(custom.clone());
             if let Some(store) = window.imp().store.get() {
-                if store.get(&id).is_none() {
-                    // The device is online but not stored yet; a later discovery saves it.
-                }
                 store.set_custom_name(&id, custom);
+            }
+            if save_on_bulb && trimmed.is_ascii() {
+                device.set_bulb_name(trimmed.clone());
+                device.recompute_name();
+                if let Some(backend) = window.imp().backend.get() {
+                    backend.send(BackendCommand::SetBulbName {
+                        id: DeviceId::new(&id),
+                        name: trimmed,
+                    });
+                }
             }
         });
     }
@@ -468,10 +619,318 @@ impl Window {
             });
         }
         self.imp().devices.remove(id);
+        self.rebuild_groups();
         self.update_page();
         self.toast(&gettext(
             "Forgot this light. It will reappear if it is still on the network.",
         ));
+    }
+
+    fn preset_choices(&self) -> Vec<(String, TintChoice)> {
+        let Some(store) = self.imp().store.get() else {
+            return Vec::new();
+        };
+        store
+            .presets()
+            .into_iter()
+            .filter_map(|preset| {
+                let choice = match preset.kind.as_str() {
+                    "hsv" => TintChoice::Hsv {
+                        hue: preset.hue,
+                        sat: preset.sat,
+                    },
+                    "ct" => TintChoice::Temperature(preset.kelvin),
+                    _ => return None,
+                };
+                Some((preset.name, choice))
+            })
+            .collect()
+    }
+
+    fn remember_preset(&self, choice: TintChoice) {
+        let Some(store) = self.imp().store.get() else {
+            return;
+        };
+        let index = store.presets().len() + 1;
+        let preset = match choice {
+            TintChoice::Hsv { hue, sat } => StoredPreset {
+                name: gettext("Saved {}").replace("{}", &index.to_string()),
+                kind: "hsv".into(),
+                hue,
+                sat,
+                kelvin: 0,
+            },
+            TintChoice::Temperature(kelvin) => StoredPreset {
+                name: gettext("White {}K").replace("{}", &kelvin.to_string()),
+                kind: "ct".into(),
+                hue: 0,
+                sat: 0,
+                kelvin,
+            },
+        };
+        store.add_preset(preset);
+    }
+
+    fn forget_preset(&self, index: usize) {
+        if let Some(store) = self.imp().store.get() {
+            store.remove_preset(index);
+        }
+    }
+
+    fn prompt_probe(&self) {
+        let dialog = adw::AlertDialog::new(
+            Some(&gettext("Add Light by Address")),
+            Some(&gettext(
+                "Enter the light's IP address. LAN Control must be enabled.",
+            )),
+        );
+        let entry = gtk::Entry::new();
+        entry.set_placeholder_text(Some("192.168.1.20"));
+        entry.set_activates_default(true);
+        let entry_for_response = entry.clone();
+        dialog.set_extra_child(Some(&entry));
+        dialog.add_response("cancel", &gettext("Cancel"));
+        dialog.add_response("add", &gettext("Add"));
+        dialog.set_response_appearance("add", adw::ResponseAppearance::Suggested);
+        dialog.set_default_response(Some("add"));
+        dialog.set_close_response("cancel");
+        let window = self.downgrade();
+        dialog.connect_response(None, move |_, response| {
+            if response != "add" {
+                return;
+            }
+            if let Some(window) = window.upgrade() {
+                window.probe_address(&entry_for_response.text());
+            }
+        });
+        dialog.present(Some(self));
+    }
+
+    fn probe_address(&self, text: &str) {
+        let text = text.trim();
+        let addr = if let Ok(addr) = text.parse::<SocketAddr>() {
+            Some(addr)
+        } else if let Ok(ip) = text.parse::<Ipv4Addr>() {
+            Some(SocketAddr::from((ip, yeelight::DISCOVERY_PORT)))
+        } else {
+            None
+        };
+        let Some(addr) = addr else {
+            self.toast(&gettext("Enter an IP address, like 192.168.1.20."));
+            return;
+        };
+        if let Some(backend) = self.imp().backend.get() {
+            backend.send(BackendCommand::Probe { addr });
+            self.toast(
+                &gettext("Looking for a light at {}…").replace("{}", &addr.ip().to_string()),
+            );
+        }
+    }
+
+    fn open_lan_help(&self) {
+        let launcher = gtk::UriLauncher::new(
+            "https://github.com/bruno-srio/lumen/blob/main/docs/LAN-CONTROL.md",
+        );
+        launcher.launch(Some(self), None::<&gio::Cancellable>, |_| {});
+    }
+
+    fn edit_group(&self, existing: Option<StoredGroup>) {
+        let current_members = existing
+            .as_ref()
+            .map(|group| group.members.clone())
+            .unwrap_or_default();
+        let lights = self
+            .imp()
+            .devices
+            .iter()
+            .into_iter()
+            .map(|device| {
+                let id = device.device_id();
+                let selected = current_members.iter().any(|member| member == &id);
+                (id, device.name(), selected)
+            })
+            .collect();
+        let heading = if existing.is_some() {
+            gettext("Edit Group")
+        } else {
+            gettext("New Group")
+        };
+        let current_name = existing
+            .as_ref()
+            .map(|group| group.name.clone())
+            .unwrap_or_default();
+        let group_id = existing.as_ref().map(|group| group.id.clone());
+        let allow_delete = group_id.is_some();
+        let window = self.downgrade();
+        let save_id = group_id.clone();
+        let delete_id = group_id;
+        GroupDialog::present_for(
+            self,
+            &heading,
+            &current_name,
+            lights,
+            allow_delete,
+            move |name, members| {
+                let Some(window) = window.upgrade() else {
+                    return;
+                };
+                let id = save_id
+                    .clone()
+                    .unwrap_or_else(|| format!("group-{}", glib::real_time().unsigned_abs()));
+                if let Some(store) = window.imp().store.get() {
+                    store.save_group(StoredGroup { id, name, members });
+                }
+                window.rebuild_groups();
+            },
+            {
+                let window = self.downgrade();
+                move || {
+                    let Some(window) = window.upgrade() else {
+                        return;
+                    };
+                    if let (Some(store), Some(id)) = (window.imp().store.get(), delete_id.as_ref())
+                    {
+                        store.delete_group(id);
+                    }
+                    window.rebuild_groups();
+                }
+            },
+        );
+    }
+
+    fn rebuild_groups(&self) {
+        let groups_box = self.imp().groups_box.get();
+        while let Some(child) = groups_box.first_child() {
+            groups_box.remove(&child);
+        }
+        let Some(store) = self.imp().store.get() else {
+            groups_box.set_visible(false);
+            self.imp().groups_heading.set_visible(false);
+            return;
+        };
+        let groups = store.groups();
+        let show_groups = !groups.is_empty();
+        groups_box.set_visible(show_groups);
+        self.imp().groups_heading.set_visible(show_groups);
+        for group in groups {
+            let members = group.members.clone();
+            let name = group.name.clone();
+            let stored = group.clone();
+            let window = self.downgrade();
+            let power_members = members.clone();
+            let bright_members = members.clone();
+            let tint_members = members;
+            let card = GroupCard::new(
+                &name,
+                stored.members.clone(),
+                self.imp().devices.clone(),
+                GroupHooks {
+                    power: Box::new({
+                        let window = window.clone();
+                        move |on| {
+                            if let Some(window) = window.upgrade() {
+                                window.fanout_power(&power_members, on);
+                            }
+                        }
+                    }),
+                    brightness: Box::new({
+                        let window = window.clone();
+                        move |brightness| {
+                            if let Some(window) = window.upgrade() {
+                                window.fanout_brightness(&bright_members, brightness);
+                            }
+                        }
+                    }),
+                    tint: Box::new({
+                        let window = window.clone();
+                        move |choice| {
+                            if let Some(window) = window.upgrade() {
+                                window.fanout_tint(&tint_members, choice);
+                            }
+                        }
+                    }),
+                    edit: Box::new({
+                        let window = window.clone();
+                        let stored = stored.clone();
+                        move || {
+                            if let Some(window) = window.upgrade() {
+                                window.edit_group(Some(stored.clone()));
+                            }
+                        }
+                    }),
+                    presets: Box::new({
+                        let window = window.clone();
+                        move || {
+                            window
+                                .upgrade()
+                                .map(|window| window.preset_choices())
+                                .unwrap_or_default()
+                        }
+                    }),
+                    save_preset: Box::new({
+                        let window = window.clone();
+                        move |choice| {
+                            if let Some(window) = window.upgrade() {
+                                window.remember_preset(choice);
+                            }
+                        }
+                    }),
+                    remove_preset: Box::new({
+                        let window = window;
+                        move |index| {
+                            if let Some(window) = window.upgrade() {
+                                window.forget_preset(index);
+                            }
+                        }
+                    }),
+                },
+            );
+            groups_box.insert(&card, -1);
+        }
+    }
+
+    fn fanout_power(&self, members: &[String], on: bool) {
+        for id in members {
+            if let Some(device) = self.imp().devices.find(id) {
+                if device.online() && device.has_power() {
+                    device.user_power(on);
+                    self.send_power(id, on);
+                }
+            }
+        }
+    }
+
+    fn fanout_brightness(&self, members: &[String], brightness: u8) {
+        for id in members {
+            if let Some(device) = self.imp().devices.find(id) {
+                if device.online() && device.power() && device.has_brightness() {
+                    device.user_brightness(brightness);
+                    self.send_brightness(id, brightness);
+                }
+            }
+        }
+    }
+
+    fn fanout_tint(&self, members: &[String], choice: TintChoice) {
+        for id in members {
+            let Some(device) = self.imp().devices.find(id) else {
+                continue;
+            };
+            if !device.online() || !device.power() {
+                continue;
+            }
+            match choice {
+                TintChoice::Hsv { hue, sat } if device.has_color() => {
+                    device.user_color(hue, sat);
+                    self.send_tint(id, choice);
+                }
+                TintChoice::Temperature(kelvin) if device.has_temperature() => {
+                    device.user_temperature(kelvin);
+                    self.send_tint(id, choice);
+                }
+                _ => {}
+            }
+        }
     }
 
     fn focused_card(&self) -> Option<DeviceCard> {

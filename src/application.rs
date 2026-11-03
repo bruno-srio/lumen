@@ -24,6 +24,8 @@ pub fn run() -> glib::ExitCode {
     app.set_accels_for_action("win.refresh", &["F5", "<primary>r"]);
     app.set_accels_for_action("win.close", &["<primary>w"]);
     app.set_accels_for_action("win.rename", &["F2"]);
+    app.set_accels_for_action("win.all-on", &["<primary><shift>o"]);
+    app.set_accels_for_action("win.all-off", &["<primary><shift>f"]);
     app.set_accels_for_action("win.shortcuts", &["<primary>question"]);
     app.set_accels_for_action("win.about", &["<primary>comma"]);
 

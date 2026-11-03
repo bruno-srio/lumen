@@ -39,6 +39,7 @@ pub struct Discovery {
 
 enum SearchCmd {
     Search,
+    Probe(SocketAddr),
     Shutdown,
 }
 
@@ -73,6 +74,9 @@ impl Discovery {
                     cmd = search_rx.recv() => {
                         match cmd {
                             Some(SearchCmd::Search) => send_searches(&search, &config).await,
+                            Some(SearchCmd::Probe(target)) => {
+                                let _ = search.send_to(search_request().as_bytes(), target).await;
+                            }
                             Some(SearchCmd::Shutdown) | None => break,
                         }
                     }
@@ -86,6 +90,13 @@ impl Discovery {
         });
 
         Ok(Self { search_tx })
+    }
+
+    pub async fn probe(&self, target: SocketAddr) -> Result<(), Error> {
+        self.search_tx
+            .send(SearchCmd::Probe(target))
+            .await
+            .map_err(|_| Error::Closed)
     }
 
     pub async fn search(&self) -> Result<(), Error> {

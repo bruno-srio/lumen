@@ -6,9 +6,18 @@ template $LumenRenameDialog : Adw.AlertDialog {
   body: _("This name is stored on this computer. Leave it empty to use the light's own name.");
   close-response: "cancel";
 
-  extra-child: Entry name_entry {
-    placeholder-text: _("Bedroom Ceiling");
-    activates-default: true;
+  extra-child: Box {
+    orientation: vertical;
+    spacing: 12;
+
+    Entry name_entry {
+      placeholder-text: _("Bedroom Ceiling");
+      activates-default: true;
+    }
+
+    CheckButton save_on_bulb {
+      label: _("Also save this name on the light");
+    }
   };
 
   responses [

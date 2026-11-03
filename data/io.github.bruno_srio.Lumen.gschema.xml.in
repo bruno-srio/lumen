@@ -16,5 +16,10 @@
       <summary>Window maximized</summary>
       <description>Whether the main window is maximized.</description>
     </key>
+    <key name="run-in-background" type="b">
+      <default>false</default>
+      <summary>Run in background</summary>
+      <description>Keep controlling lights after the window is closed.</description>
+    </key>
   </schema>
 </schemalist>

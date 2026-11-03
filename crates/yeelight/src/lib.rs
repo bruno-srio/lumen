@@ -8,6 +8,7 @@ mod color;
 mod connection;
 mod discovery;
 mod discovery_msg;
+mod effects;
 mod error;
 mod lan;
 mod manager;
@@ -18,14 +19,15 @@ mod scheduler;
 pub use capabilities::{fallback_name, model_label, Capabilities};
 pub use color::{ct_to_rgb, hs_to_rgb, rgb_to_hs, Rgb};
 pub use connection::{
-    transact, ColorUpdate, ConnectionState, DeviceCommand, DeviceEvent, FailReason, LinkConfig,
-    UnavailableReason,
+    transact, ColorUpdate, ConnectionState, DeviceCommand, DeviceEvent, EffectPreset, FailReason,
+    LinkConfig, UnavailableReason,
 };
 pub use discovery::{lan_ipv4_interfaces, Discovery, DiscoveryConfig, DiscoveryPacket};
 pub use discovery_msg::{
     format_notify, format_search_response, parse_discovery, search_request, validate_discovery,
     DiscoveryInfo, DISCOVERY_PORT, MULTICAST_ADDR, SEARCH_REQUEST,
 };
+pub use effects::flow;
 pub use error::{DeviceError, Error};
 pub use lan::is_lan_ipv4;
 pub use manager::{run as run_manager, BackendCommand, BackendEvent, ManagerConfig};

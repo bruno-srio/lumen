@@ -47,11 +47,24 @@ template $LumenWindow : Adw.ApplicationWindow {
             description: _("Turn on LAN Control for each light in the Yeelight app, then make sure this computer is on the same network.");
             icon-name: "lightbulb-symbolic";
 
-            child: Button {
-              label: _("Search Again");
-              action-name: "win.refresh";
-              css-classes: ["pill", "suggested-action"];
+            child: Box {
+              orientation: vertical;
+              spacing: 12;
               halign: center;
+
+              Button {
+                label: _("Search Again");
+                action-name: "win.refresh";
+                css-classes: ["pill", "suggested-action"];
+                halign: center;
+              }
+
+              Button {
+                label: _("How to Enable LAN Control");
+                action-name: "win.lan-help";
+                css-classes: ["flat"];
+                halign: center;
+              }
             };
           };
         }
@@ -63,7 +76,32 @@ template $LumenWindow : Adw.ApplicationWindow {
             child: Adw.Clamp {
               maximum-size: 1100;
               tightening-threshold: 360;
-              child: FlowBox devices_box {
+              child: Box {
+                orientation: vertical;
+                spacing: 12;
+
+              Label groups_heading {
+                label: _("Groups");
+                halign: start;
+                margin-top: 12;
+                margin-start: 12;
+                css-classes: ["heading"];
+                visible: false;
+              }
+
+              FlowBox groups_box {
+                margin-start: 12;
+                margin-end: 12;
+                row-spacing: 12;
+                column-spacing: 12;
+                selection-mode: none;
+                homogeneous: true;
+                min-children-per-line: 1;
+                max-children-per-line: 3;
+                visible: false;
+              }
+
+              FlowBox devices_box {
                 margin-top: 12;
                 margin-bottom: 24;
                 margin-start: 12;
@@ -75,6 +113,7 @@ template $LumenWindow : Adw.ApplicationWindow {
                 min-children-per-line: 1;
                 max-children-per-line: 3;
                 activate-on-single-click: false;
+              }
               };
             };
           };

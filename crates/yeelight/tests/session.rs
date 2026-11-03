@@ -1,7 +1,7 @@
 use std::time::Duration;
 use yeelight::{
-    run_manager, BackendCommand, BackendEvent, ColorUpdate, ConnectionState, FailReason,
-    ManagerConfig, UnavailableReason,
+    run_manager, BackendCommand, BackendEvent, ColorUpdate, ConnectionState, EffectPreset,
+    FailReason, ManagerConfig, UnavailableReason,
 };
 use yeelight_sim::{BulbSpec, SimConfig, SimNetwork};
 
@@ -271,6 +271,103 @@ async fn off_bulb_rejects_brightness_and_quota_can_stick() {
         }
     ));
 
+    let _ = commands.send(BackendCommand::Shutdown).await;
+    let _ = manager.await;
+}
+
+#[tokio::test]
+async fn temperature_effect_and_probe() {
+    let sim = SimNetwork::start(SimConfig {
+        discovery_port: 0,
+        multicast: false,
+        bulbs: vec![BulbSpec::color("0x000000000000c003", "Lamp")],
+        stuck_quota: false,
+        latency: Duration::ZERO,
+        drop_after: None,
+    })
+    .await
+    .unwrap();
+    let (commands, command_rx) = async_channel::bounded(32);
+    let (event_tx, events) = async_channel::bounded(32);
+    let manager = tokio::spawn(run_manager(
+        command_rx,
+        event_tx,
+        test_config(sim.discovery_addr()),
+    ));
+    let discovery = sim.discovery_addr();
+    let probe = std::net::SocketAddr::from((std::net::Ipv4Addr::LOCALHOST, discovery.port()));
+    commands
+        .send(BackendCommand::Probe { addr: probe })
+        .await
+        .unwrap();
+    let BackendEvent::DeviceSeen(info) = wait_for(&events, Duration::from_secs(3), |event| {
+        matches!(event, BackendEvent::DeviceSeen(_))
+    })
+    .await
+    else {
+        unreachable!()
+    };
+    wait_for(&events, Duration::from_secs(3), |event| {
+        matches!(
+            event,
+            BackendEvent::ConnectionChanged {
+                state: ConnectionState::Online,
+                ..
+            }
+        )
+    })
+    .await;
+    commands
+        .send(BackendCommand::SetColor {
+            id: info.id.clone(),
+            color: ColorUpdate::Temperature(3000),
+        })
+        .await
+        .unwrap();
+    tokio::time::timeout(Duration::from_secs(2), async {
+        loop {
+            if sim.bulbs()[0].snapshot().await.ct == 3000 {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    })
+    .await
+    .expect("color temperature applied");
+    commands
+        .send(BackendCommand::StartEffect {
+            id: info.id.clone(),
+            preset: EffectPreset::Candle,
+        })
+        .await
+        .unwrap();
+    tokio::time::timeout(Duration::from_secs(2), async {
+        loop {
+            if sim.bulbs()[0].snapshot().await.flowing {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    })
+    .await
+    .expect("effect started");
+    commands
+        .send(BackendCommand::SleepTimer {
+            id: info.id.clone(),
+            minutes: Some(15),
+        })
+        .await
+        .unwrap();
+    tokio::time::timeout(Duration::from_secs(2), async {
+        loop {
+            if sim.bulbs()[0].snapshot().await.delayoff == 15 {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    })
+    .await
+    .expect("sleep timer stored");
     let _ = commands.send(BackendCommand::Shutdown).await;
     let _ = manager.await;
 }

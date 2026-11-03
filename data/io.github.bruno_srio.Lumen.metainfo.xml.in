@@ -15,7 +15,7 @@
   </branding>
   <description>
     <p>
-      Lumen finds Yeelight lights on the local network and lets you turn them on or off, change brightness, and pick a color. It is a native GNOME application and does not need a Yeelight account or an internet connection.
+      Lumen finds Yeelight lights on the local network and lets you turn them on or off, change brightness, set a color or a white temperature, save colors, group lights, run an effect, and set a sleep timer. It is a native GNOME application and does not need a Yeelight account or an internet connection.
     </p>
     <p>
       LAN Control has to be enabled for each light in the Yeelight mobile app. Names you choose are stored on this computer and stay attached to the light even if its IP address changes.
@@ -31,14 +31,19 @@
   <screenshots>
     <screenshot type="default">
       <caption>The light list, with power, brightness, and color controls</caption>
-      <image>https://raw.githubusercontent.com/bruno-srio/lumen/v0.1.1/data/screenshots/lights.png</image>
+      <image>https://raw.githubusercontent.com/bruno-srio/lumen/v0.2.0/data/screenshots/lights.png</image>
     </screenshot>
     <screenshot>
       <caption>Lumen in the dark style</caption>
-      <image>https://raw.githubusercontent.com/bruno-srio/lumen/v0.1.1/data/screenshots/lights-dark.png</image>
+      <image>https://raw.githubusercontent.com/bruno-srio/lumen/v0.2.0/data/screenshots/lights-dark.png</image>
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.2.0" date="2026-11-03">
+      <description>
+        <p>Adds color temperature, saved colors, groups, effects, a sleep timer, all-on and all-off, adding a light by address, an optional name stored on the bulb, and a Brazilian Portuguese translation.</p>
+      </description>
+    </release>
     <release version="0.1.1" date="2026-11-03">
       <description>
         <p>Power, brightness, and color changes are sent to the lights. Names and addresses are remembered between launches.</p>

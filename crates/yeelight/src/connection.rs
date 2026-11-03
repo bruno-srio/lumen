@@ -28,6 +28,14 @@ pub enum UnavailableReason {
 pub enum ColorUpdate {
     Hsv { hue: u16, sat: u8 },
     Rgb(u32),
+    Temperature(u32),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EffectPreset {
+    Candle,
+    Sunrise,
+    ColorLoop,
 }
 
 #[derive(Clone, Debug)]
@@ -35,6 +43,10 @@ pub enum DeviceCommand {
     SetPower(bool),
     SetBrightness(u8),
     SetColor(ColorUpdate),
+    SetBulbName(String),
+    StartEffect(EffectPreset),
+    StopEffect,
+    SleepTimer(Option<u32>),
     SetCapabilities(Capabilities),
     Relocate(SocketAddr),
     Retry,
@@ -299,21 +311,40 @@ async fn connect_and_serve(
         }
 
         if inflight.is_none() {
-            if let PollAction::Send(channel, command) = scheduler.poll(Instant::now()) {
-                if let Err(end) = send_command(
-                    &mut writer,
-                    &mut inflight,
-                    next_id,
-                    command,
-                    Some(channel),
-                    scheduler,
-                    false,
-                )
-                .await
-                {
-                    return end;
+            match scheduler.poll(Instant::now()) {
+                PollAction::Send(channel, command) => {
+                    if let Err(end) = send_command(
+                        &mut writer,
+                        &mut inflight,
+                        next_id,
+                        command,
+                        Some(channel),
+                        scheduler,
+                        false,
+                    )
+                    .await
+                    {
+                        return end;
+                    }
+                    continue;
                 }
-                continue;
+                PollAction::SendImmediate(command) => {
+                    if let Err(end) = send_command(
+                        &mut writer,
+                        &mut inflight,
+                        next_id,
+                        command,
+                        None,
+                        scheduler,
+                        false,
+                    )
+                    .await
+                    {
+                        return end;
+                    }
+                    continue;
+                }
+                PollAction::Wait(_) | PollAction::Idle => {}
             }
         }
         let wait = if let Some(current) = inflight.as_ref() {
@@ -327,7 +358,9 @@ async fn connect_and_serve(
         } else {
             match scheduler.poll(Instant::now()) {
                 PollAction::Wait(duration) => duration,
-                PollAction::Send(_, _) | PollAction::Idle => Duration::from_secs(3600),
+                PollAction::Send(_, _) | PollAction::SendImmediate(_) | PollAction::Idle => {
+                    Duration::from_secs(3600)
+                }
             }
         };
 
@@ -403,7 +436,37 @@ async fn apply_user_command(
         }
         DeviceCommand::SetColor(update) => color_command(update, caps)
             .map(|command| (channel_of(&command).unwrap_or(Channel::Color), command)),
-        DeviceCommand::SetPower(_) | DeviceCommand::SetBrightness(_) => None,
+        DeviceCommand::SetBulbName(name) if caps.set_name => {
+            scheduler.push_immediate(Command::SetName { name });
+            return true;
+        }
+        DeviceCommand::StartEffect(preset) if caps.effects => {
+            let (count, action, expression) = crate::effects::flow(preset, !caps.has_color());
+            scheduler.push_immediate(Command::StartCf {
+                count,
+                action,
+                expression,
+            });
+            return true;
+        }
+        DeviceCommand::StopEffect if caps.effects => {
+            scheduler.push_immediate(Command::StopCf);
+            return true;
+        }
+        DeviceCommand::SleepTimer(Some(minutes)) if caps.timer => {
+            scheduler.push_immediate(Command::CronAdd { minutes });
+            return true;
+        }
+        DeviceCommand::SleepTimer(None) if caps.timer => {
+            scheduler.push_immediate(Command::CronDel);
+            return true;
+        }
+        DeviceCommand::SetPower(_)
+        | DeviceCommand::SetBrightness(_)
+        | DeviceCommand::SetBulbName(_)
+        | DeviceCommand::StartEffect(_)
+        | DeviceCommand::StopEffect
+        | DeviceCommand::SleepTimer(_) => None,
         _ => return true,
     };
     let Some((channel, command)) = built else {
@@ -426,6 +489,14 @@ fn color_command(update: ColorUpdate, caps: &Capabilities) -> Option<Command> {
         ColorUpdate::Rgb(rgb) if caps.hsv => {
             let (hue, sat) = rgb_to_hs(Rgb::from_u32(rgb));
             Some(Command::set_hsv(hue, sat))
+        }
+        ColorUpdate::Temperature(kelvin) if caps.color_temperature => {
+            let kelvin = kelvin.clamp(caps.ct_min, caps.ct_max);
+            Some(Command::SetCt {
+                kelvin,
+                effect: crate::protocol::Effect::Smooth,
+                duration_ms: crate::protocol::SLIDER_DURATION_MS,
+            })
         }
         _ => None,
     }

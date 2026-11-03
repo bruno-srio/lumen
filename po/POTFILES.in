@@ -7,3 +7,14 @@ src/widgets/device_card.rs
 src/widgets/color_popover.rs
 src/widgets/rename_dialog.rs
 src/widgets/device_details.rs
+src/widgets/group_card.rs
+src/widgets/group_dialog.rs
+src/widgets/window.blp
+src/widgets/device_card.blp
+src/widgets/color_popover.blp
+src/widgets/rename_dialog.blp
+src/widgets/device_details.blp
+src/widgets/group_card.blp
+src/widgets/group_dialog.blp
+data/io.github.bruno_srio.Lumen.desktop.in
+data/io.github.bruno_srio.Lumen.metainfo.xml.in

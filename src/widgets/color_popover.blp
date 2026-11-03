@@ -16,6 +16,31 @@ template $LumenColorPopover : Popover {
       css-classes: ["heading"];
     }
 
+    Box saved_row {
+      spacing: 6;
+
+      FlowBox saved_swatches {
+        hexpand: true;
+        selection-mode: none;
+        homogeneous: true;
+        min-children-per-line: 4;
+        max-children-per-line: 6;
+        column-spacing: 6;
+        row-spacing: 6;
+      }
+
+      Button save_button {
+        icon-name: "list-add-symbolic";
+        tooltip-text: _("Save Color");
+        css-classes: ["flat"];
+        valign: center;
+      }
+    }
+
+    Box color_section {
+      orientation: vertical;
+      spacing: 12;
+
     FlowBox swatches {
       selection-mode: none;
       homogeneous: true;
@@ -75,6 +100,45 @@ template $LumenColorPopover : Popover {
       label: _("Custom…");
       halign: end;
       css-classes: ["flat"];
+    }
+    }
+
+    Box white_section {
+      orientation: vertical;
+      spacing: 8;
+
+      Label {
+        label: _("White");
+        halign: start;
+        css-classes: ["heading"];
+      }
+
+      Box {
+        spacing: 8;
+
+        Label {
+          label: _("Warm");
+          width-request: 72;
+          xalign: 0;
+        }
+
+        Scale temperature_scale {
+          hexpand: true;
+          draw-value: false;
+          css-classes: ["temperature"];
+
+          adjustment: Adjustment {
+            lower: 1700;
+            upper: 6500;
+            step-increment: 50;
+            page-increment: 200;
+          };
+        }
+
+        Label {
+          label: _("Cool");
+        }
+      }
     }
   }
 }

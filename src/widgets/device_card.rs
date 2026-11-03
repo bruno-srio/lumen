@@ -1,10 +1,26 @@
-use super::ColorPopover;
+use super::{ColorPopover, TintChoice};
 use crate::model::DeviceObject;
+use gettextrs::gettext;
 use glib::subclass::prelude::*;
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
 use std::cell::Cell;
 use std::rc::Rc;
+use yeelight::EffectPreset;
+
+pub struct CardHooks {
+    pub rename: Box<dyn Fn()>,
+    pub details: Box<dyn Fn()>,
+    pub power: Box<dyn Fn(bool)>,
+    pub brightness: Box<dyn Fn(u8)>,
+    pub tint: Box<dyn Fn(TintChoice)>,
+    pub effect: Box<dyn Fn(EffectPreset)>,
+    pub stop_effect: Box<dyn Fn()>,
+    pub sleep: Box<dyn Fn(Option<u32>)>,
+    pub save_preset: Box<dyn Fn(TintChoice)>,
+    pub remove_preset: Box<dyn Fn(usize)>,
+    pub presets: Box<dyn Fn() -> Vec<(String, TintChoice)>>,
+}
 
 mod imp {
     use super::*;
@@ -58,18 +74,32 @@ glib::wrapper! {
 }
 
 impl DeviceCard {
-    pub fn new(
-        device: &DeviceObject,
-        on_rename: impl Fn() + 'static,
-        on_details: impl Fn() + 'static,
-        on_power: impl Fn(bool) + 'static,
-        on_brightness: impl Fn(u8) + 'static,
-        on_color: impl Fn(u16, u8) + 'static,
-    ) -> Self {
+    pub fn new(device: &DeviceObject, hooks: CardHooks) -> Self {
         let card: Self = glib::Object::new();
         card.set_widget_name(&device.device_id());
-        card.bind(device, on_power, on_brightness, on_color);
-        card.install_actions(on_rename, on_details);
+        let CardHooks {
+            rename,
+            details,
+            effect,
+            stop_effect,
+            sleep,
+            power,
+            brightness,
+            tint,
+            save_preset,
+            remove_preset,
+            presets,
+        } = hooks;
+        card.install_actions(device, rename, details, effect, stop_effect, sleep);
+        card.bind(
+            device,
+            power,
+            brightness,
+            tint,
+            save_preset,
+            remove_preset,
+            presets,
+        );
         card
     }
 
@@ -80,9 +110,12 @@ impl DeviceCard {
     fn bind(
         &self,
         device: &DeviceObject,
-        on_power: impl Fn(bool) + 'static,
-        on_brightness: impl Fn(u8) + 'static,
-        on_color: impl Fn(u16, u8) + 'static,
+        on_power: Box<dyn Fn(bool)>,
+        on_brightness: Box<dyn Fn(u8)>,
+        on_tint: Box<dyn Fn(TintChoice)>,
+        on_save: Box<dyn Fn(TintChoice)>,
+        on_remove: Box<dyn Fn(usize)>,
+        presets: Box<dyn Fn() -> Vec<(String, TintChoice)>>,
     ) {
         let imp = self.imp();
         device
@@ -106,11 +139,11 @@ impl DeviceCard {
             .sync_create()
             .build();
         device
-            .bind_property("has-color", &imp.color_button.get(), "visible")
+            .bind_property("has-tint", &imp.color_button.get(), "visible")
             .sync_create()
             .build();
         device
-            .bind_property("color-enabled", &imp.color_button.get(), "sensitive")
+            .bind_property("tint-enabled", &imp.color_button.get(), "sensitive")
             .sync_create()
             .build();
 
@@ -157,6 +190,9 @@ impl DeviceCard {
             "online",
             "name",
             "has-color",
+            "has-temperature",
+            "color-mode",
+            "color-temperature",
             "status-text",
         ] {
             let refresh = refresh.clone();
@@ -189,19 +225,48 @@ impl DeviceCard {
 
         let popover = ColorPopover::new();
         let device_for_color = device.downgrade();
-        popover.connect_selected(move |hue, sat| {
+        popover.connect_selected(move |choice| {
             if let Some(device) = device_for_color.upgrade() {
-                device.user_color(hue, sat);
-                on_color(hue, sat);
+                match choice {
+                    TintChoice::Hsv { hue, sat } => device.user_color(hue, sat),
+                    TintChoice::Temperature(kelvin) => device.user_temperature(kelvin),
+                }
+                on_tint(choice);
+            }
+        });
+        let popover_for_save = popover.downgrade();
+        let presets = Rc::new(presets);
+        let presets_for_save = presets.clone();
+        popover.connect_save(move |choice| {
+            on_save(choice);
+            if let Some(popover) = popover_for_save.upgrade() {
+                popover.set_saved(presets_for_save.as_ref()());
+            }
+        });
+        let popover_for_remove = popover.downgrade();
+        let presets_for_remove = presets.clone();
+        popover.connect_remove_saved(move |index| {
+            on_remove(index);
+            if let Some(popover) = popover_for_remove.upgrade() {
+                popover.set_saved(presets_for_remove.as_ref()());
             }
         });
         let device_for_show = device.downgrade();
         let popover_for_show = popover.downgrade();
+        let presets_for_show = presets;
         popover.connect_show(move |_| {
             if let (Some(popover), Some(device)) =
                 (popover_for_show.upgrade(), device_for_show.upgrade())
             {
+                popover.set_capabilities(
+                    device.has_color(),
+                    device.has_temperature(),
+                    f64::from(device.ct_min()),
+                    f64::from(device.ct_max().max(device.ct_min())),
+                );
                 popover.set_color(device.hue() as u16, device.saturation() as u8);
+                popover.set_temperature(device.color_temperature());
+                popover.set_saved(presets_for_show.as_ref()());
             }
         });
         imp.color_button.set_popover(Some(&popover));
@@ -234,23 +299,96 @@ impl DeviceCard {
             "{name}, {}",
             device.status_text()
         ))]);
+        let brightness = gettext("Brightness");
+        let power = gettext("Power");
         self.imp()
             .brightness_scale
             .update_property(&[gtk::accessible::Property::Label(&format!(
-                "Brightness, {name}"
+                "{brightness}, {name}"
             ))]);
         self.imp()
             .power_switch
-            .update_property(&[gtk::accessible::Property::Label(&format!("Power, {name}"))]);
+            .update_property(&[gtk::accessible::Property::Label(&format!(
+                "{power}, {name}"
+            ))]);
     }
 
-    fn install_actions(&self, on_rename: impl Fn() + 'static, on_details: impl Fn() + 'static) {
+    fn install_actions(
+        &self,
+        device: &DeviceObject,
+        on_rename: Box<dyn Fn()>,
+        on_details: Box<dyn Fn()>,
+        on_effect: Box<dyn Fn(EffectPreset)>,
+        on_stop_effect: Box<dyn Fn()>,
+        on_sleep: Box<dyn Fn(Option<u32>)>,
+    ) {
         let menu = gio::Menu::new();
-        menu.append(Some("Rename…"), Some("card.rename"));
-        menu.append(Some("Device Details"), Some("card.details"));
+        let effects = gio::Menu::new();
+        effects.append(Some(&gettext("Candle")), Some("card.candle"));
+        effects.append(Some(&gettext("Sunrise")), Some("card.sunrise"));
+        effects.append(Some(&gettext("Color Loop")), Some("card.color-loop"));
+        effects.append(Some(&gettext("Stop Effect")), Some("card.stop-effect"));
+        menu.append_submenu(Some(&gettext("Effects")), &effects);
+        let sleep = gio::Menu::new();
+        sleep.append(Some(&gettext("15 minutes")), Some("card.sleep-15"));
+        sleep.append(Some(&gettext("30 minutes")), Some("card.sleep-30"));
+        sleep.append(Some(&gettext("60 minutes")), Some("card.sleep-60"));
+        sleep.append(Some(&gettext("Cancel Timer")), Some("card.sleep-cancel"));
+        menu.append_submenu(Some(&gettext("Sleep Timer")), &sleep);
+        menu.append(Some(&gettext("Rename…")), Some("card.rename"));
+        menu.append(Some(&gettext("Device Details")), Some("card.details"));
         self.imp().card_menu.set_menu_model(Some(&menu));
 
         let group = gio::SimpleActionGroup::new();
+        let on_effect = Rc::new(on_effect);
+        for (name, preset, needs_color) in [
+            ("candle", EffectPreset::Candle, false),
+            ("sunrise", EffectPreset::Sunrise, false),
+            ("color-loop", EffectPreset::ColorLoop, false),
+        ] {
+            let action = gio::SimpleAction::new(name, None);
+            let callback = on_effect.clone();
+            action.connect_activate(move |_, _| callback.as_ref()(preset));
+            let allowed = device.has_effects() && (!needs_color || device.has_color());
+            action.set_enabled(allowed);
+            let action_for_notify = action.clone();
+            device.connect_notify_local(Some("has-effects"), move |device, _| {
+                action_for_notify.set_enabled(device.has_effects());
+            });
+            group.add_action(&action);
+        }
+        let stop = gio::SimpleAction::new("stop-effect", None);
+        let refresh_stop: Rc<dyn Fn()> = {
+            let action = stop.clone();
+            let device = device.clone();
+            Rc::new(move || action.set_enabled(device.has_effects() && device.flowing()))
+        };
+        refresh_stop.as_ref()();
+        stop.connect_activate(move |_, _| on_stop_effect());
+        for property in ["has-effects", "flowing"] {
+            let refresh_stop = refresh_stop.clone();
+            device.connect_notify_local(Some(property), move |_, _| refresh_stop.as_ref()());
+        }
+        group.add_action(&stop);
+
+        let on_sleep = Rc::new(on_sleep);
+        for (name, minutes) in [
+            ("sleep-15", Some(15u32)),
+            ("sleep-30", Some(30)),
+            ("sleep-60", Some(60)),
+            ("sleep-cancel", None),
+        ] {
+            let action = gio::SimpleAction::new(name, None);
+            action.set_enabled(device.has_timer());
+            let on_sleep = on_sleep.clone();
+            action.connect_activate(move |_, _| on_sleep.as_ref()(minutes));
+            let action_for_notify = action.clone();
+            device.connect_notify_local(Some("has-timer"), move |device, _| {
+                action_for_notify.set_enabled(device.has_timer());
+            });
+            group.add_action(&action);
+        }
+
         let rename = gio::SimpleAction::new("rename", None);
         rename.connect_activate(move |_, _| on_rename());
         group.add_action(&rename);
@@ -268,6 +406,11 @@ impl DeviceCard {
 fn indicator(device: &DeviceObject) -> (u8, u8, u8) {
     if !device.online() || !device.power() {
         return (136, 136, 136);
+    }
+    if device.color_mode() == 2 || (!device.has_color() && device.has_temperature()) {
+        let kelvin = device.color_temperature().clamp(1000, 20000);
+        let rgb = yeelight::ct_to_rgb(kelvin);
+        return (rgb.r, rgb.g, rgb.b);
     }
     if device.has_color() {
         let rgb = if device.saturation() > 0 || device.hue() > 0 {

@@ -9,8 +9,10 @@ blueprints = custom_target(
     meson.project_source_root() / 'src/widgets/color_popover.blp',
     meson.project_source_root() / 'src/widgets/rename_dialog.blp',
     meson.project_source_root() / 'src/widgets/device_details.blp',
+    meson.project_source_root() / 'src/widgets/group_card.blp',
+    meson.project_source_root() / 'src/widgets/group_dialog.blp',
   ),
-  output: ['window.ui', 'device_card.ui', 'color_popover.ui', 'rename_dialog.ui', 'device_details.ui'],
+  output: ['window.ui', 'device_card.ui', 'color_popover.ui', 'rename_dialog.ui', 'device_details.ui', 'group_card.ui', 'group_dialog.ui'],
   command: [
     compile_blueprints,
     blueprint_compiler,

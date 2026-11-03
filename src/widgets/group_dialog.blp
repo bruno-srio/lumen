@@ -1,0 +1,36 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $LumenGroupDialog : Adw.AlertDialog {
+  heading: _("Group");
+  body: _("Choose a name and the lights that belong together.");
+  close-response: "cancel";
+
+  extra-child: Box {
+    orientation: vertical;
+    spacing: 12;
+
+    Entry name_entry {
+      placeholder-text: _("Living Room");
+      activates-default: true;
+    }
+
+    ScrolledWindow {
+      hscrollbar-policy: never;
+      min-content-height: 160;
+      max-content-height: 240;
+      propagate-natural-height: true;
+
+      ListBox members {
+        selection-mode: none;
+        css-classes: ["boxed-list"];
+      }
+    }
+  };
+
+  responses [
+    cancel: _("Cancel"),
+    delete: _("Delete Group"),
+    save: _("Save"),
+  ]
+}

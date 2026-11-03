@@ -18,6 +18,7 @@ struct Pending {
 
 pub struct Scheduler {
     pending: HashMap<Channel, Pending>,
+    immediate: VecDeque<Command>,
     last_sent: HashMap<Channel, Instant>,
     sent_at: VecDeque<Instant>,
     quota_paused_until: Option<Instant>,
@@ -31,6 +32,7 @@ pub struct Scheduler {
 #[derive(Debug)]
 pub enum PollAction {
     Send(Channel, Command),
+    SendImmediate(Command),
     Wait(Duration),
     Idle,
 }
@@ -39,6 +41,7 @@ impl Scheduler {
     pub fn new(min_interval: Duration, max_per_minute: usize) -> Self {
         Self {
             pending: HashMap::new(),
+            immediate: VecDeque::new(),
             last_sent: HashMap::new(),
             sent_at: VecDeque::new(),
             quota_paused_until: None,
@@ -79,6 +82,10 @@ impl Scheduler {
             command,
             not_before: now,
         });
+    }
+
+    pub fn push_immediate(&mut self, command: Command) {
+        self.immediate.push_back(command);
     }
 
     pub fn note_sent(&mut self, now: Instant) {
@@ -122,6 +129,11 @@ impl Scheduler {
             }
         }
 
+        if let Some(command) = self.immediate.pop_front() {
+            self.sent_at.push_back(now);
+            return PollAction::SendImmediate(command);
+        }
+
         let due = self
             .pending
             .iter()
@@ -163,7 +175,12 @@ pub fn channel_of(command: &Command) -> Option<Channel> {
         Command::SetRgb { .. } | Command::SetHsv { .. } | Command::SetCt { .. } => {
             Some(Channel::Color)
         }
-        Command::GetProp { .. } | Command::SetName { .. } => None,
+        Command::GetProp { .. }
+        | Command::SetName { .. }
+        | Command::StartCf { .. }
+        | Command::StopCf
+        | Command::CronAdd { .. }
+        | Command::CronDel => None,
     }
 }
 

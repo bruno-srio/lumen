@@ -62,6 +62,7 @@ pub struct LightState {
     pub sat: Option<u8>,
     pub name: Option<String>,
     pub flowing: Option<bool>,
+    pub delayoff: Option<u32>,
 }
 
 impl LightState {
@@ -92,6 +93,9 @@ impl LightState {
         }
         if other.flowing.is_some() {
             self.flowing = other.flowing;
+        }
+        if other.delayoff.is_some() {
+            self.delayoff = other.delayoff;
         }
     }
 
@@ -157,6 +161,11 @@ impl LightState {
                 "0" => self.flowing = Some(false),
                 _ => {}
             },
+            "delayoff" => {
+                if let Ok(value) = raw.parse::<u32>() {
+                    self.delayoff = Some(value);
+                }
+            }
             _ => {}
         }
     }
@@ -190,6 +199,7 @@ pub const SYNC_PROPS: &[&str] = &[
     "color_mode",
     "name",
     "flowing",
+    "delayoff",
 ];
 
 #[cfg(test)]

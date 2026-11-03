@@ -12,6 +12,9 @@ pub struct Capabilities {
     pub hsv: bool,
     pub color_temperature: bool,
     pub background: bool,
+    pub effects: bool,
+    pub timer: bool,
+    pub set_name: bool,
     pub ct_min: u32,
     pub ct_max: u32,
 }
@@ -25,6 +28,9 @@ impl Default for Capabilities {
             hsv: false,
             color_temperature: false,
             background: false,
+            effects: false,
+            timer: false,
+            set_name: false,
             ct_min: 1700,
             ct_max: 6500,
         }
@@ -42,6 +48,9 @@ impl Capabilities {
             hsv: has("set_hsv"),
             color_temperature: has("set_ct_abx"),
             background: has("bg_set_power"),
+            effects: has("start_cf"),
+            timer: has("cron_add"),
+            set_name: has("set_name"),
             ct_min,
             ct_max,
         }
