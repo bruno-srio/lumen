@@ -22,14 +22,7 @@ Yeelight is a trademark of its owner. Lumen is an independent project and is not
 
 ## Install
 
-Download `lumen-0.2.0.flatpak` from the [latest release](https://github.com/bruno-srio/lumen/releases/latest) and install it:
-
-```sh
-flatpak install --user lumen-0.2.0.flatpak
-flatpak run io.github.bruno_srio.Lumen
-```
-
-A Flathub listing is planned after the next release. Until then, the GitHub release is the download.
+<a href="https://flathub.org/apps/io.github.bruno_srio.Lumen"><img width="200" alt="Get it on Flathub" src="https://flathub.org/api/badge?locale=en"/></a>
 
 ## What it does
 
