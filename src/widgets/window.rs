@@ -3,6 +3,10 @@ use super::{
     RenameDialog, TintChoice,
 };
 use crate::backend::Backend;
+use crate::commands::{
+    parse_probe_address, receives_brightness, receives_power, receives_tint, toggle_all_target,
+    FanoutMember, TintKind,
+};
 use crate::config::APP_ID;
 use crate::model::{DeviceList, DeviceObject};
 use crate::store::{DeviceStore, StoredGroup, StoredPreset};
@@ -16,7 +20,7 @@ use glib::subclass::prelude::*;
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
 use std::cell::{Cell, OnceCell, RefCell};
-use std::net::{Ipv4Addr, SocketAddr};
+use std::net::SocketAddr;
 use yeelight::{BackendCommand, BackendEvent, Capabilities, ColorUpdate, DeviceId, EffectPreset};
 
 mod imp {
@@ -433,13 +437,14 @@ impl Window {
     }
 
     fn toggle_all(&self) {
-        let any_on = self
+        let members: Vec<FanoutMember> = self
             .imp()
             .devices
             .iter()
             .into_iter()
-            .any(|device| device.online() && device.has_power() && device.power());
-        self.set_all_power(!any_on);
+            .map(|device| member_view(&device))
+            .collect();
+        self.set_all_power(toggle_all_target(&members));
     }
 
     fn present_preferences(&self) {
@@ -841,15 +846,7 @@ impl Window {
     }
 
     fn probe_address(&self, text: &str) {
-        let text = text.trim();
-        let addr = if let Ok(addr) = text.parse::<SocketAddr>() {
-            Some(addr)
-        } else if let Ok(ip) = text.parse::<Ipv4Addr>() {
-            Some(SocketAddr::from((ip, yeelight::DISCOVERY_PORT)))
-        } else {
-            None
-        };
-        let Some(addr) = addr else {
+        let Some(addr) = parse_probe_address(text) else {
             self.toast(&gettext("Enter an IP address, like 192.168.1.20."));
             return;
         };
@@ -1026,7 +1023,7 @@ impl Window {
     fn fanout_power(&self, members: &[String], on: bool) {
         for id in members {
             if let Some(device) = self.imp().devices.find(id) {
-                if device.online() && device.has_power() {
+                if receives_power(&member_view(&device)) {
                     device.user_power(on);
                     self.send_power(id, on);
                 }
@@ -1037,7 +1034,7 @@ impl Window {
     fn fanout_brightness(&self, members: &[String], brightness: u8) {
         for id in members {
             if let Some(device) = self.imp().devices.find(id) {
-                if device.online() && device.power() && device.has_brightness() {
+                if receives_brightness(&member_view(&device)) {
                     device.user_brightness(brightness);
                     self.send_brightness(id, brightness);
                 }
@@ -1046,23 +1043,26 @@ impl Window {
     }
 
     fn fanout_tint(&self, members: &[String], choice: TintChoice) {
+        let kind = match choice {
+            TintChoice::Hsv { .. } => TintKind::Color,
+            TintChoice::Temperature(_) => TintKind::Temperature,
+        };
         for id in members {
             let Some(device) = self.imp().devices.find(id) else {
                 continue;
             };
-            if !device.online() || !device.power() {
+            if !receives_tint(&member_view(&device), kind) {
                 continue;
             }
             match choice {
-                TintChoice::Hsv { hue, sat } if device.has_color() => {
+                TintChoice::Hsv { hue, sat } => {
                     device.user_color(hue, sat);
                     self.send_tint(id, choice);
                 }
-                TintChoice::Temperature(kelvin) if device.has_temperature() => {
+                TintChoice::Temperature(kelvin) => {
                     device.user_temperature(kelvin);
                     self.send_tint(id, choice);
                 }
-                _ => {}
             }
         }
     }
@@ -1075,6 +1075,17 @@ impl Window {
             }
             widget = widget.parent()?;
         }
+    }
+}
+
+fn member_view(device: &DeviceObject) -> FanoutMember {
+    FanoutMember {
+        online: device.online(),
+        power: device.power(),
+        has_power: device.has_power(),
+        has_brightness: device.has_brightness(),
+        has_color: device.has_color(),
+        has_temperature: device.has_temperature(),
     }
 }
 

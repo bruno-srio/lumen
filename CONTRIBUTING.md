@@ -16,9 +16,12 @@ _build/src/lumen
 
 ```sh
 cargo test -p yeelight -p yeelight-sim
+cargo test -p lumen
 cargo clippy -p yeelight -p yeelight-sim --all-targets -- -D warnings
 cargo fmt --all --check
 ```
+
+`cargo test -p lumen` needs the GTK packages from the build section. Without a display, run `xvfb-run cargo test -p lumen`.
 
 `yeelight-sim` speaks the real LAN protocol, so most work does not need a bulb:
 

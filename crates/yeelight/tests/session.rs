@@ -368,6 +368,210 @@ async fn temperature_effect_and_probe() {
     })
     .await
     .expect("sleep timer stored");
+    commands
+        .send(BackendCommand::StopEffect {
+            id: info.id.clone(),
+        })
+        .await
+        .unwrap();
+    tokio::time::timeout(Duration::from_secs(2), async {
+        loop {
+            if !sim.bulbs()[0].snapshot().await.flowing {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    })
+    .await
+    .expect("effect stopped");
+    commands
+        .send(BackendCommand::SleepTimer {
+            id: info.id.clone(),
+            minutes: None,
+        })
+        .await
+        .unwrap();
+    tokio::time::timeout(Duration::from_secs(2), async {
+        loop {
+            if sim.bulbs()[0].snapshot().await.delayoff == 0 {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    })
+    .await
+    .expect("sleep timer cancelled");
+    commands
+        .send(BackendCommand::SetBulbName {
+            id: info.id.clone(),
+            name: "Desk".into(),
+        })
+        .await
+        .unwrap();
+    tokio::time::timeout(Duration::from_secs(2), async {
+        loop {
+            if sim.bulbs()[0].snapshot().await.name == "Desk" {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    })
+    .await
+    .expect("name stored on the bulb");
+    let _ = commands.send(BackendCommand::Shutdown).await;
+    let _ = manager.await;
+}
+
+#[tokio::test]
+async fn white_temperature_and_mono_rejection() {
+    let sim = SimNetwork::start(SimConfig {
+        discovery_port: 0,
+        multicast: false,
+        bulbs: vec![
+            BulbSpec::color_temperature("0x000000000000d001", "White"),
+            BulbSpec::mono("0x000000000000d002", "Mono"),
+        ],
+        stuck_quota: false,
+        latency: Duration::ZERO,
+        drop_after: None,
+    })
+    .await
+    .unwrap();
+    let (commands, command_rx) = async_channel::bounded(32);
+    let (event_tx, events) = async_channel::bounded(64);
+    let manager = tokio::spawn(run_manager(
+        command_rx,
+        event_tx,
+        test_config(sim.discovery_addr()),
+    ));
+    commands.send(BackendCommand::Scan).await.unwrap();
+
+    let mut white = None;
+    let mut mono = None;
+    while white.is_none() || mono.is_none() {
+        let BackendEvent::DeviceSeen(info) = wait_for(&events, Duration::from_secs(3), |event| {
+            matches!(event, BackendEvent::DeviceSeen(_))
+        })
+        .await
+        else {
+            unreachable!()
+        };
+        if info.model == "ct_bulb" {
+            white = Some(info);
+        } else {
+            mono = Some(info);
+        }
+    }
+    let white = white.unwrap();
+    let mono = mono.unwrap();
+    for id in [white.id.as_str(), mono.id.as_str()] {
+        wait_for(&events, Duration::from_secs(3), |event| {
+            matches!(
+                event,
+                BackendEvent::ConnectionChanged {
+                    id: seen,
+                    state: ConnectionState::Online,
+                } if seen.as_str() == id
+            )
+        })
+        .await;
+    }
+
+    commands
+        .send(BackendCommand::SetColor {
+            id: white.id.clone(),
+            color: ColorUpdate::Temperature(2700),
+        })
+        .await
+        .unwrap();
+    tokio::time::timeout(Duration::from_secs(2), async {
+        loop {
+            let snap = sim
+                .bulbs()
+                .iter()
+                .find(|bulb| bulb.id().as_str() == white.id.as_str())
+                .unwrap()
+                .snapshot()
+                .await;
+            if snap.ct == 2700 {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    })
+    .await
+    .expect("white bulb accepted the temperature");
+
+    commands
+        .send(BackendCommand::SetColor {
+            id: mono.id.clone(),
+            color: ColorUpdate::Temperature(2700),
+        })
+        .await
+        .unwrap();
+    let failed = wait_for(&events, Duration::from_secs(3), |event| {
+        matches!(
+            event,
+            BackendEvent::CommandFailed {
+                reason: FailReason::Unsupported,
+                ..
+            }
+        )
+    })
+    .await;
+    assert!(matches!(
+        failed,
+        BackendEvent::CommandFailed {
+            reason: FailReason::Unsupported,
+            ..
+        }
+    ));
+    let _ = commands.send(BackendCommand::Shutdown).await;
+    let _ = manager.await;
+}
+
+#[tokio::test]
+async fn probe_rejects_public_and_closed_ports() {
+    let sim = SimNetwork::start(SimConfig {
+        discovery_port: 0,
+        multicast: false,
+        bulbs: vec![],
+        stuck_quota: false,
+        latency: Duration::ZERO,
+        drop_after: None,
+    })
+    .await
+    .unwrap();
+    let (commands, command_rx) = async_channel::bounded(8);
+    let (event_tx, events) = async_channel::bounded(8);
+    let manager = tokio::spawn(run_manager(
+        command_rx,
+        event_tx,
+        test_config(sim.discovery_addr()),
+    ));
+    commands
+        .send(BackendCommand::Probe {
+            addr: "8.8.8.8:1982".parse().unwrap(),
+        })
+        .await
+        .unwrap();
+    let public = wait_for(&events, Duration::from_secs(1), |event| {
+        matches!(event, BackendEvent::ProbeFailed { .. })
+    })
+    .await;
+    assert!(matches!(public, BackendEvent::ProbeFailed { addr } if addr.contains("8.8.8.8")));
+
+    commands
+        .send(BackendCommand::Probe {
+            addr: "127.0.0.1:1".parse().unwrap(),
+        })
+        .await
+        .unwrap();
+    let closed = wait_for(&events, Duration::from_secs(5), |event| {
+        matches!(event, BackendEvent::ProbeFailed { .. })
+    })
+    .await;
+    assert!(matches!(closed, BackendEvent::ProbeFailed { addr } if addr.contains("127.0.0.1")));
     let _ = commands.send(BackendCommand::Shutdown).await;
     let _ = manager.await;
 }

@@ -6,9 +6,10 @@ From the repository root:
 
 ```sh
 cargo test -p yeelight -p yeelight-sim
+cargo test -p lumen
 ```
 
-This covers message parsing, capability detection, the command scheduler (including the 50 command per minute cap, using a paused clock), and an integration test that drives the real client against `yeelight-sim` over localhost. The integration test does not need multicast or UDP port 1982.
+The first command covers message parsing, capability detection, the command scheduler, and simulator sessions. It does not need a display. The second command covers saved names, groups, and the rules for group commands and add-by-address. It builds the GTK interface, so it needs GTK 4, libadwaita, and `blueprint-compiler`. Run it under a display, or with `xvfb-run cargo test -p lumen` when there is none.
 
 ## Simulator
 

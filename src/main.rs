@@ -1,5 +1,6 @@
 mod application;
 mod backend;
+mod commands;
 mod config;
 mod model;
 mod portals;
