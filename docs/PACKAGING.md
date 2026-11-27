@@ -19,15 +19,20 @@ flatpak-cargo-generator Cargo.lock -o build-aux/cargo-sources.json
 
 `flatpak-cargo-generator` is the script from [flatpak-builder-tools](https://github.com/flatpak/flatpak-builder-tools/tree/master/cargo). It can also be installed with `pipx install flatpak-cargo-generator`.
 
-Build the development manifest, which uses a separate application id:
+Build and export from the repository root. The commands use `flatpak-builder` and then `flatpak build-bundle`. A finished build directory is not the package. The bundle is branch `stable` and names Flathub as the runtime repository, so `flatpak install` can fetch `org.gnome.Platform//51` if it is not already installed.
 
 ```sh
-flatpak run org.flatpak.Builder --force-clean --user --install \
-  _build/flatpak build-aux/io.github.bruno_srio.Lumen.Devel.json
-flatpak run io.github.bruno_srio.Lumen.Devel
+./scripts/lumen flatpak
+./scripts/lumen release
 ```
 
-The release manifest is `build-aux/io.github.bruno_srio.Lumen.json`. Both manifests point at this source tree so they can be built locally. The Flathub submission replaces the `dir` source with the `v0.2.0` GitHub archive and its `sha256`, and commits a fresh `cargo-sources.json` beside that manifest.
+`flatpak` builds `io.github.bruno_srio.Lumen.Devel` and writes `$LUMEN_WORK/flatpak/lumen-devel.flatpak`. `release` checks that the Git tree is clean, that Cargo, Meson, and the newest AppStream release agree, and that `v<version>` points at `HEAD`. It then runs the tests and writes `$LUMEN_WORK/packages/v<version>/lumen-<version>.flatpak`. It does not tag, push, or publish. `--allow-dirty` is off by default. It warns that the package may contain unreleased changes and writes `$LUMEN_WORK/packages/local/lumen-<version>-dirty.flatpak` instead.
+
+Neither command feeds the working tree to `flatpak-builder`. The committed manifests use a directory source, which would copy ignored files such as `target/`. A release is staged with `git archive` of the tag. A development build, and `--allow-dirty`, stage `git archive HEAD` plus tracked edits and untracked files that Git does not ignore.
+
+Devel and release keep separate `state/`, `build/`, and `repo/` directories under `$LUMEN_WORK/flatpak`. `flatpak-builder --state-dir` stores downloads and build caches, so the two variants do not share it. The command stops if a state directory and its build directory are on different filesystems.
+
+The release manifest in the repository is `build-aux/io.github.bruno_srio.Lumen.json`. The Flathub checkout still builds the `v0.2.0` GitHub archive. Updating that checkout is a separate submission. Details of where the files live are in [WORKSPACE.md](WORKSPACE.md).
 
 Check the result:
 
