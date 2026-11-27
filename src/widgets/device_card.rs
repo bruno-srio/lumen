@@ -1,8 +1,9 @@
 use super::{ColorPopover, TintChoice};
+use crate::commands::clamp_sleep_minutes;
 use crate::model::DeviceObject;
+use adw::prelude::*;
 use gettextrs::gettext;
 use glib::subclass::prelude::*;
-use gtk::prelude::*;
 use gtk::subclass::prelude::*;
 use std::cell::Cell;
 use std::rc::Rc;
@@ -333,6 +334,7 @@ impl DeviceCard {
         sleep.append(Some(&gettext("15 minutes")), Some("card.sleep-15"));
         sleep.append(Some(&gettext("30 minutes")), Some("card.sleep-30"));
         sleep.append(Some(&gettext("60 minutes")), Some("card.sleep-60"));
+        sleep.append(Some(&gettext("Custom…")), Some("card.sleep-custom"));
         sleep.append(Some(&gettext("Cancel Timer")), Some("card.sleep-cancel"));
         menu.append_submenu(Some(&gettext("Sleep Timer")), &sleep);
         menu.append(Some(&gettext("Rename…")), Some("card.rename"));
@@ -389,6 +391,20 @@ impl DeviceCard {
             group.add_action(&action);
         }
 
+        let custom = gio::SimpleAction::new("sleep-custom", None);
+        custom.set_enabled(device.has_timer());
+        let on_sleep = on_sleep.clone();
+        let card = self.clone();
+        custom.connect_activate(move |_, _| {
+            let on_sleep = on_sleep.clone();
+            present_custom_sleep(&card, move |minutes| on_sleep(Some(minutes)));
+        });
+        let action_for_notify = custom.clone();
+        device.connect_notify_local(Some("has-timer"), move |device, _| {
+            action_for_notify.set_enabled(device.has_timer());
+        });
+        group.add_action(&custom);
+
         let rename = gio::SimpleAction::new("rename", None);
         rename.connect_activate(move |_, _| on_rename());
         group.add_action(&rename);
@@ -401,6 +417,32 @@ impl DeviceCard {
     pub fn activate_rename(&self) {
         let _ = self.activate_action("card.rename", None);
     }
+}
+
+fn present_custom_sleep(parent: &impl IsA<gtk::Widget>, on_confirm: impl Fn(u32) + 'static) {
+    let dialog = adw::AlertDialog::new(
+        Some(&gettext("Custom Timer")),
+        Some(&gettext("Choose how many minutes until the light turns off.")),
+    );
+    let minutes = adw::SpinRow::with_range(1.0, 720.0, 1.0);
+    minutes.set_digits(0);
+    minutes.set_value(15.0);
+    minutes.set_title(&gettext("Minutes"));
+    dialog.set_extra_child(Some(&minutes));
+    dialog.add_response("cancel", &gettext("Cancel"));
+    dialog.add_response("set", &gettext("Set Timer"));
+    dialog.set_response_appearance("set", adw::ResponseAppearance::Suggested);
+    dialog.set_default_response(Some("set"));
+    dialog.set_close_response("cancel");
+    dialog.connect_response(None, move |_, response| {
+        if response != "set" {
+            return;
+        }
+        if let Some(minutes) = clamp_sleep_minutes(minutes.value()) {
+            on_confirm(minutes);
+        }
+    });
+    dialog.present(Some(parent));
 }
 
 fn indicator(device: &DeviceObject) -> (u8, u8, u8) {

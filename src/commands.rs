@@ -56,6 +56,18 @@ pub fn receives_tint(member: &FanoutMember, kind: TintKind) -> bool {
     }
 }
 
+/// A custom sleep timer is a whole number of minutes, from one minute through 12 hours.
+pub fn clamp_sleep_minutes(minutes: f64) -> Option<u32> {
+    if !minutes.is_finite() {
+        return None;
+    }
+    let rounded = minutes.round();
+    if !(1.0..=720.0).contains(&rounded) {
+        return None;
+    }
+    Some(rounded as u32)
+}
+
 /// Toggle All turns the lights off when any reachable one is on, and on otherwise.
 pub fn toggle_all_target(members: &[FanoutMember]) -> bool {
     let any_on = members
@@ -86,6 +98,16 @@ mod tests {
         assert_eq!(plain.port(), DISCOVERY_PORT);
         let explicit = parse_probe_address("  10.0.0.4:1982 ").unwrap();
         assert_eq!(explicit.port(), 1982);
+    }
+
+    #[test]
+    fn sleep_minutes_accept_one_through_twelve_hours() {
+        assert_eq!(clamp_sleep_minutes(1.0), Some(1));
+        assert_eq!(clamp_sleep_minutes(15.4), Some(15));
+        assert_eq!(clamp_sleep_minutes(720.0), Some(720));
+        assert_eq!(clamp_sleep_minutes(0.0), None);
+        assert_eq!(clamp_sleep_minutes(721.0), None);
+        assert_eq!(clamp_sleep_minutes(f64::NAN), None);
     }
 
     #[test]

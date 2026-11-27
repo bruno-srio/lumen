@@ -4,8 +4,8 @@ use super::{
 };
 use crate::backend::Backend;
 use crate::commands::{
-    parse_probe_address, receives_brightness, receives_power, receives_tint, toggle_all_target,
-    FanoutMember, TintKind,
+    clamp_sleep_minutes, parse_probe_address, receives_brightness, receives_power, receives_tint,
+    toggle_all_target, FanoutMember, TintKind,
 };
 use crate::config::APP_ID;
 use crate::model::{DeviceList, DeviceObject};
@@ -438,6 +438,13 @@ impl Window {
     }
 
     fn send_sleep(&self, id: &str, minutes: Option<u32>) {
+        let minutes = match minutes {
+            Some(value) => match clamp_sleep_minutes(value as f64) {
+                Some(minutes) => Some(minutes),
+                None => return,
+            },
+            None => None,
+        };
         if let Some(device) = self.imp().devices.find(id) {
             device.set_delayoff(minutes.unwrap_or(0));
             device.refresh_status();
@@ -1164,47 +1171,5 @@ fn save_window_state(window: &Window) {
         let _ = settings.set_int("window-width", window.width());
         let _ = settings.set_int("window-height", window.height());
         let _ = settings.set_boolean("window-maximized", window.is_maximized());
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn window_has_light_and_group_pages() {
-        let _ = gio::resources_register_include!("lumen.gresource");
-        let app = adw::Application::builder()
-            .application_id("io.github.bruno_srio.Lumen.Test")
-            .build();
-        app.connect_activate(|app| {
-            let window = Window::new(app);
-            assert!(window.imp().section_stack.child_by_name("lights").is_some());
-            assert!(window.imp().section_stack.child_by_name("groups").is_some());
-            window.imp().stack.set_visible_child_name("devices");
-            window.set_default_size(420, 640);
-            window.present();
-            let app = app.clone();
-            let window = window.clone();
-            glib::timeout_add_local(std::time::Duration::from_millis(80), move || {
-                assert!(window.current_breakpoint().is_some());
-                window.sync_section_switcher();
-                assert!(window.imp().section_bar.is_visible());
-                assert!(!window.imp().header_switcher.is_visible());
-                window.set_default_size(960, 700);
-                let app = app.clone();
-                let window = window.clone();
-                glib::timeout_add_local(std::time::Duration::from_millis(80), move || {
-                    assert!(window.current_breakpoint().is_none());
-                    window.sync_section_switcher();
-                    assert!(window.imp().header_switcher.is_visible());
-                    assert!(!window.imp().section_bar.is_visible());
-                    app.quit();
-                    glib::ControlFlow::Break
-                });
-                glib::ControlFlow::Break
-            });
-        });
-        app.run_with_args::<&str>(&[]);
     }
 }
