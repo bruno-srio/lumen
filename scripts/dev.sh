@@ -103,6 +103,24 @@ stop_simulator() {
   fi
 }
 
+report_fmt() {
+  status=$1
+  if [ "$cmd" != fmt ]; then
+    return 0
+  fi
+  if [ "$status" -eq 0 ]; then
+    if [ "$fmt_check" -eq 1 ]; then
+      echo "Rust formatting is up to date."
+    else
+      echo "Formatted the Rust code."
+    fi
+    return 0
+  fi
+  if [ "$fmt_check" -eq 1 ]; then
+    echo "error: Rust formatting differs. Run ./scripts/dev.sh fmt to fix it." >&2
+  fi
+}
+
 if ! command -v pkg-config >/dev/null 2>&1 \
   || ! pkg-config --exists gtk4 \
   || ! pkg-config --exists libadwaita-1; then
@@ -114,6 +132,7 @@ fi
 cd "$ROOT"
 
 cmd=run
+fmt_check=0
 if [ "$#" -gt 0 ]; then
   cmd=$1
   shift
@@ -130,6 +149,11 @@ case "$cmd" in
     set -- check --workspace "$@"
     ;;
   fmt)
+    for arg in "$@"; do
+      if [ "$arg" = --check ]; then
+        fmt_check=1
+      fi
+    done
     set -- fmt --all "$@"
     ;;
   sim)
@@ -154,8 +178,9 @@ if [ "$host_gtk" -eq 1 ]; then
   if [ "$cmd" = run ]; then
     maybe_start_simulator host
   fi
-  cargo "$@"
-  status=$?
+  status=0
+  cargo "$@" || status=$?
+  report_fmt "$status"
   stop_simulator
   exit "$status"
 fi
@@ -176,9 +201,10 @@ if [ "$cmd" = run ]; then
   maybe_start_simulator toolbox
 fi
 
+status=0
 toolbox run -c "$CONTAINER" \
   env "CARGO_TARGET_DIR=${ROOT}/target/yeelight-dev" \
-  cargo "$@"
-status=$?
+  cargo "$@" || status=$?
+report_fmt "$status"
 stop_simulator
 exit "$status"
