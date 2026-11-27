@@ -5,10 +5,12 @@
 From the repository root:
 
 ```sh
-./scripts/dev.sh test
+cargo test --workspace
 ```
 
-`./scripts/lumen test` is the same command. It runs on the host when `pkg-config` can see GTK, and inside the `yeelight-dev` Toolbox otherwise. The protocol suite covers message parsing, capability detection, the command scheduler, and simulator sessions. It does not need a display. The app suite covers saved names, groups, and the rules for group commands and add-by-address. It builds the GTK interface, so the machine that compiles it must have GTK 4, libadwaita, and `blueprint-compiler`. See [DEVELOPMENT.md](DEVELOPMENT.md). Without a display, run `xvfb-run cargo test -p lumen` where those libraries are installed.
+`./scripts/lumen test` is the same suite. It runs on the host when `pkg-config` can see GTK, and in a Toolbox otherwise. On my machine that container is `yeelight-dev`. You only need a container if the libraries are not installed on the host.
+
+The protocol suite covers message parsing, capability detection, the command scheduler, and simulator sessions. It does not need a display. The app suite covers saved names, groups, and the rules for group commands and add-by-address. It builds the GTK interface, so the machine that compiles it must have GTK 4, libadwaita, and `blueprint-compiler`. See [DEVELOPMENT.md](DEVELOPMENT.md). Without a display, run `xvfb-run cargo test -p lumen` where those libraries are installed.
 
 ## Simulator
 
