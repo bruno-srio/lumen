@@ -24,6 +24,7 @@ blueprints = custom_target(
 resources = gnome.compile_resources(
   'lumen-resources',
   'resources.gresource.xml',
+  source_dir: meson.project_source_root() / 'data/icons',
   dependencies: blueprints,
   gresource_bundle: true,
   install: true,
