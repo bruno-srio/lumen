@@ -48,8 +48,9 @@ These development packages are installed in the current container and in the ima
 [`scripts/dev.sh`](../scripts/dev.sh) finds the repository root and then picks an environment. If `pkg-config` sees `gtk4` and `libadwaita-1`, Cargo runs on the host and `CARGO_TARGET_DIR` is left unset. Otherwise Cargo runs in the Toolbox container named by `LUMEN_TOOLBOX` (default `yeelight-dev`). It works from any directory.
 
 ```sh
-./scripts/dev.sh              # build and launch Lumen
-./scripts/dev.sh run          # same
+./scripts/dev.sh              # build and launch Lumen, and start the simulator if it is not running
+./scripts/dev.sh sim          # run only the simulator
+./scripts/dev.sh run          # same as the first command
 ./scripts/dev.sh run --release
 ./scripts/dev.sh test         # protocol crate and the app
 ./scripts/dev.sh test parse_probe_address
