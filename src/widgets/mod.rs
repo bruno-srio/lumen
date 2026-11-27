@@ -77,5 +77,9 @@ pub fn show_about(parent: &impl IsA<gtk::Widget>) {
         .copyright("© 2026 Bruno Ribeiro")
         .license_type(gtk::License::Gpl30)
         .build();
+    dialog.add_credit_section(
+        Some("Icons"),
+        &["Font Awesome Free, CC BY 4.0, Fonticons, Inc."],
+    );
     dialog.present(Some(parent));
 }
