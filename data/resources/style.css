@@ -3,6 +3,12 @@
   padding: 16px;
 }
 
+button.group-icon {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 6px;
+}
+
 .device-card.unavailable {
   opacity: 0.62;
 }

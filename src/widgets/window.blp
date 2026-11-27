@@ -8,6 +8,10 @@ template $LumenWindow : Adw.ApplicationWindow {
   width-request: 360;
   height-request: 280;
 
+  Adw.Breakpoint {
+    condition ("max-width: 600sp")
+  }
+
   Adw.ToastOverlay toast_overlay {
     Adw.ToolbarView {
       [top]
@@ -25,6 +29,17 @@ template $LumenWindow : Adw.ApplicationWindow {
           tooltip-text: _("Main Menu");
           primary: true;
         }
+
+        title-widget: Adw.ViewSwitcher header_switcher {
+          stack: section_stack;
+          policy: wide;
+        };
+      }
+
+      [bottom]
+      Adw.ViewSwitcherBar section_bar {
+        stack: section_stack;
+        reveal: true;
       }
 
       content: Stack stack {
@@ -71,51 +86,89 @@ template $LumenWindow : Adw.ApplicationWindow {
 
         StackPage {
           name: "devices";
-          child: ScrolledWindow {
-            hscrollbar-policy: never;
-            child: Adw.Clamp {
-              maximum-size: 1100;
-              tightening-threshold: 360;
-              child: Box {
-                orientation: vertical;
-                spacing: 12;
+          child: Adw.ViewStack section_stack {
+            vexpand: true;
+            hexpand: true;
 
-              Label groups_heading {
-                label: _("Groups");
-                halign: start;
-                margin-top: 12;
-                margin-start: 12;
-                css-classes: ["heading"];
-                visible: false;
-              }
+            Adw.ViewStackPage {
+              name: "lights";
+              title: _("Lights");
+              icon-name: "lightbulb-symbolic";
 
-              FlowBox groups_box {
-                margin-start: 12;
-                margin-end: 12;
-                row-spacing: 12;
-                column-spacing: 12;
-                selection-mode: none;
-                homogeneous: true;
-                min-children-per-line: 1;
-                max-children-per-line: 3;
-                visible: false;
-              }
+              child: ScrolledWindow {
+                hscrollbar-policy: never;
 
-              FlowBox devices_box {
-                margin-top: 12;
-                margin-bottom: 24;
-                margin-start: 12;
-                margin-end: 12;
-                row-spacing: 12;
-                column-spacing: 12;
-                selection-mode: none;
-                homogeneous: true;
-                min-children-per-line: 1;
-                max-children-per-line: 3;
-                activate-on-single-click: false;
-              }
+                child: Adw.Clamp {
+                  maximum-size: 1100;
+                  tightening-threshold: 360;
+
+                  child: FlowBox devices_box {
+                    margin-top: 12;
+                    margin-bottom: 24;
+                    margin-start: 12;
+                    margin-end: 12;
+                    row-spacing: 12;
+                    column-spacing: 12;
+                    selection-mode: none;
+                    homogeneous: true;
+                    min-children-per-line: 1;
+                    max-children-per-line: 3;
+                    activate-on-single-click: false;
+                  };
+                };
               };
-            };
+            }
+
+            Adw.ViewStackPage {
+              name: "groups";
+              title: _("Groups");
+              icon-name: "view-grid-symbolic";
+
+              child: Stack groups_stack {
+                StackPage {
+                  name: "list";
+
+                  child: ScrolledWindow {
+                    hscrollbar-policy: never;
+
+                    child: Adw.Clamp {
+                      maximum-size: 1100;
+                      tightening-threshold: 360;
+
+                      child: FlowBox groups_box {
+                        margin-top: 12;
+                        margin-bottom: 24;
+                        margin-start: 12;
+                        margin-end: 12;
+                        row-spacing: 12;
+                        column-spacing: 12;
+                        selection-mode: none;
+                        homogeneous: true;
+                        min-children-per-line: 1;
+                        max-children-per-line: 3;
+                      };
+                    };
+                  };
+                }
+
+                StackPage {
+                  name: "empty";
+
+                  child: Adw.StatusPage {
+                    title: _("No Groups");
+                    description: _("Group lights so one switch controls a room.");
+                    icon-name: "view-grid-symbolic";
+
+                    child: Button {
+                      label: _("New Group");
+                      action-name: "win.new-group";
+                      css-classes: ["pill", "suggested-action"];
+                      halign: center;
+                    };
+                  };
+                }
+              };
+            }
           };
         }
       };

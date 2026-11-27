@@ -1,4 +1,5 @@
 use super::{ColorPopover, TintChoice};
+use crate::group_icons::normalize_group_icon;
 use crate::model::{DeviceList, DeviceObject};
 use gettextrs::gettext;
 use glib::subclass::prelude::*;
@@ -23,6 +24,8 @@ mod imp {
     #[derive(Default, gtk::CompositeTemplate)]
     #[template(resource = "/io/github/bruno_srio/Lumen/group_card.ui")]
     pub struct GroupCard {
+        #[template_child]
+        pub icon_image: TemplateChild<gtk::Image>,
         #[template_child]
         pub name_label: TemplateChild<gtk::Label>,
         #[template_child]
@@ -66,8 +69,17 @@ glib::wrapper! {
 }
 
 impl GroupCard {
-    pub fn new(name: &str, members: Vec<String>, devices: DeviceList, hooks: GroupHooks) -> Self {
+    pub fn new(
+        name: &str,
+        icon: &str,
+        members: Vec<String>,
+        devices: DeviceList,
+        hooks: GroupHooks,
+    ) -> Self {
         let card: Self = glib::Object::new();
+        card.imp()
+            .icon_image
+            .set_icon_name(Some(normalize_group_icon(icon)));
         card.imp().name_label.set_label(name);
         card.imp().members.replace(members);
         card.imp().brightness_scale.set_range(1.0, 100.0);

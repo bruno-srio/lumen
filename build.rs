@@ -18,6 +18,7 @@ fn main() {
     println!("cargo:rerun-if-changed=src/widgets");
     println!("cargo:rerun-if-changed=data/resources/style.css");
     println!("cargo:rerun-if-changed=data/resources/resources.gresource.xml");
+    println!("cargo:rerun-if-changed=data/resources/icons");
 
     let manifest_dir =
         PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));

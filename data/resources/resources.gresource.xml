@@ -10,4 +10,14 @@
     <file>group_dialog.ui</file>
     <file compressed="true">style.css</file>
   </gresource>
+  <gresource prefix="/io/github/bruno_srio/Lumen/icons/scalable/actions">
+    <file alias="lumen-lamp-symbolic.svg">icons/lumen-lamp-symbolic.svg</file>
+    <file alias="lumen-home-symbolic.svg">icons/lumen-home-symbolic.svg</file>
+    <file alias="lumen-bed-symbolic.svg">icons/lumen-bed-symbolic.svg</file>
+    <file alias="lumen-sofa-symbolic.svg">icons/lumen-sofa-symbolic.svg</file>
+    <file alias="lumen-desk-symbolic.svg">icons/lumen-desk-symbolic.svg</file>
+    <file alias="lumen-kitchen-symbolic.svg">icons/lumen-kitchen-symbolic.svg</file>
+    <file alias="lumen-bath-symbolic.svg">icons/lumen-bath-symbolic.svg</file>
+    <file alias="lumen-sun-symbolic.svg">icons/lumen-sun-symbolic.svg</file>
+  </gresource>
 </gresources>

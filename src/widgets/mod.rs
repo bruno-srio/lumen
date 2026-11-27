@@ -27,6 +27,8 @@ pub fn load_css() {
             &provider,
             gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );
+        gtk::IconTheme::for_display(&display)
+            .add_resource_path("/io/github/bruno_srio/Lumen/icons");
     }
 }
 

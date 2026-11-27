@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use yeelight::DiscoveryInfo;
 
 use crate::config::APP_ID;
+use crate::group_icons::default_group_icon;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct StoredDevice {
@@ -35,6 +36,8 @@ pub struct StoredGroup {
     pub id: String,
     pub name: String,
     pub members: Vec<String>,
+    #[serde(default = "default_group_icon")]
+    pub icon: String,
 }
 
 #[derive(Default, Serialize, Deserialize)]
@@ -269,6 +272,7 @@ mod tests {
             id: "g1".into(),
             name: "Room".into(),
             members: vec!["0x1".into()],
+            icon: default_group_icon(),
         });
         let loaded = DeviceStore::open(path.clone());
         assert_eq!(loaded.presets()[0].kelvin, 2700);
@@ -280,6 +284,34 @@ mod tests {
         let reloaded = DeviceStore::open(path.clone());
         assert!(reloaded.presets().is_empty());
         assert!(reloaded.groups()[0].members.is_empty());
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn groups_without_an_icon_keep_their_members() {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!("lumen-store-group-icon-{nanos}.json"));
+        fs::write(
+            &path,
+            r#"{"version":2,"devices":[],"groups":[{"id":"g1","name":"Bedroom","members":["0x1"]}]}"#,
+        )
+        .unwrap();
+        let store = DeviceStore::open(path.clone());
+        assert_eq!(store.groups()[0].name, "Bedroom");
+        assert_eq!(store.groups()[0].members, vec!["0x1".to_string()]);
+        assert_eq!(store.groups()[0].icon, default_group_icon());
+        store.save_group(StoredGroup {
+            id: "g1".into(),
+            name: "Bedroom".into(),
+            members: vec!["0x1".into()],
+            icon: "lumen-bed-symbolic".into(),
+        });
+        let loaded = DeviceStore::open(path.clone());
+        assert_eq!(loaded.groups()[0].icon, "lumen-bed-symbolic");
+        assert_eq!(loaded.groups()[0].members, vec!["0x1".to_string()]);
         let _ = fs::remove_file(path);
     }
 }

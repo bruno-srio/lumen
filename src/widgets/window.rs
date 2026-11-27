@@ -9,11 +9,12 @@ use crate::commands::{
 };
 use crate::config::APP_ID;
 use crate::model::{DeviceList, DeviceObject};
+use crate::group_icons::normalize_group_icon;
 use crate::store::{DeviceStore, StoredGroup, StoredPreset};
 use crate::widgets::DeviceCard;
 use adw::prelude::{
-    ActionRowExt, AdwDialogExt, AlertDialogExt, PreferencesDialogExt, PreferencesGroupExt,
-    PreferencesPageExt, PreferencesRowExt,
+    ActionRowExt, AdwApplicationWindowExt, AdwDialogExt, AlertDialogExt, PreferencesDialogExt,
+    PreferencesGroupExt, PreferencesPageExt, PreferencesRowExt,
 };
 use gettextrs::gettext;
 use glib::subclass::prelude::*;
@@ -38,9 +39,15 @@ mod imp {
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
+        pub header_switcher: TemplateChild<adw::ViewSwitcher>,
+        #[template_child]
+        pub section_bar: TemplateChild<adw::ViewSwitcherBar>,
+        #[template_child]
+        pub section_stack: TemplateChild<adw::ViewStack>,
+        #[template_child]
         pub devices_box: TemplateChild<gtk::FlowBox>,
         #[template_child]
-        pub groups_heading: TemplateChild<gtk::Label>,
+        pub groups_stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub groups_box: TemplateChild<gtk::FlowBox>,
         pub backend: OnceCell<Backend>,
@@ -105,6 +112,13 @@ impl Window {
         self.imp().backend.set(backend).ok();
         self.bind_devices();
         self.rebuild_groups();
+        let window = self.downgrade();
+        self.connect_current_breakpoint_notify(move |_| {
+            if let Some(window) = window.upgrade() {
+                window.sync_section_switcher();
+            }
+        });
+        self.sync_section_switcher();
         self.refresh();
         if settings().is_some_and(|settings| settings.boolean("run-in-background")) {
             self.set_hide_on_close(true);
@@ -654,6 +668,16 @@ impl Window {
             "empty"
         };
         self.imp().stack.set_visible_child_name(name);
+        self.sync_section_switcher();
+    }
+
+    fn sync_section_switcher(&self) {
+        let on_devices = self.imp().stack.visible_child_name().as_deref() == Some("devices");
+        let narrow = self.current_breakpoint().is_some();
+        self.imp()
+            .header_switcher
+            .set_visible(on_devices && !narrow);
+        self.imp().section_bar.set_visible(on_devices && narrow);
     }
 
     fn toast(&self, text: &str) {
@@ -895,13 +919,18 @@ impl Window {
         let window = self.downgrade();
         let save_id = group_id.clone();
         let delete_id = group_id;
+        let current_icon = existing
+            .as_ref()
+            .map(|group| group.icon.clone())
+            .unwrap_or_default();
         GroupDialog::present_for(
             self,
             &heading,
             &current_name,
+            &current_icon,
             lights,
             allow_delete,
-            move |name, members| {
+            move |name, icon, members| {
                 let Some(window) = window.upgrade() else {
                     return;
                 };
@@ -909,7 +938,12 @@ impl Window {
                     .clone()
                     .unwrap_or_else(|| format!("group-{}", glib::real_time().unsigned_abs()));
                 if let Some(store) = window.imp().store.get() {
-                    store.save_group(StoredGroup { id, name, members });
+                    store.save_group(StoredGroup {
+                        id,
+                        name,
+                        members,
+                        icon,
+                    });
                 }
                 window.rebuild_groups();
             },
@@ -935,14 +969,15 @@ impl Window {
             groups_box.remove(&child);
         }
         let Some(store) = self.imp().store.get() else {
-            groups_box.set_visible(false);
-            self.imp().groups_heading.set_visible(false);
+            self.imp().groups_stack.set_visible_child_name("empty");
             return;
         };
         let groups = store.groups();
-        let show_groups = !groups.is_empty();
-        groups_box.set_visible(show_groups);
-        self.imp().groups_heading.set_visible(show_groups);
+        if groups.is_empty() {
+            self.imp().groups_stack.set_visible_child_name("empty");
+            return;
+        }
+        self.imp().groups_stack.set_visible_child_name("list");
         for group in groups {
             let members = group.members.clone();
             let name = group.name.clone();
@@ -953,6 +988,7 @@ impl Window {
             let tint_members = members;
             let card = GroupCard::new(
                 &name,
+                normalize_group_icon(&stored.icon),
                 stored.members.clone(),
                 self.imp().devices.clone(),
                 GroupHooks {
@@ -1128,5 +1164,47 @@ fn save_window_state(window: &Window) {
         let _ = settings.set_int("window-width", window.width());
         let _ = settings.set_int("window-height", window.height());
         let _ = settings.set_boolean("window-maximized", window.is_maximized());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn window_has_light_and_group_pages() {
+        let _ = gio::resources_register_include!("lumen.gresource");
+        let app = adw::Application::builder()
+            .application_id("io.github.bruno_srio.Lumen.Test")
+            .build();
+        app.connect_activate(|app| {
+            let window = Window::new(app);
+            assert!(window.imp().section_stack.child_by_name("lights").is_some());
+            assert!(window.imp().section_stack.child_by_name("groups").is_some());
+            window.imp().stack.set_visible_child_name("devices");
+            window.set_default_size(420, 640);
+            window.present();
+            let app = app.clone();
+            let window = window.clone();
+            glib::timeout_add_local(std::time::Duration::from_millis(80), move || {
+                assert!(window.current_breakpoint().is_some());
+                window.sync_section_switcher();
+                assert!(window.imp().section_bar.is_visible());
+                assert!(!window.imp().header_switcher.is_visible());
+                window.set_default_size(960, 700);
+                let app = app.clone();
+                let window = window.clone();
+                glib::timeout_add_local(std::time::Duration::from_millis(80), move || {
+                    assert!(window.current_breakpoint().is_none());
+                    window.sync_section_switcher();
+                    assert!(window.imp().header_switcher.is_visible());
+                    assert!(!window.imp().section_bar.is_visible());
+                    app.quit();
+                    glib::ControlFlow::Break
+                });
+                glib::ControlFlow::Break
+            });
+        });
+        app.run_with_args::<&str>(&[]);
     }
 }
