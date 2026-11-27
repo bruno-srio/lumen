@@ -323,30 +323,27 @@ impl DeviceCard {
         on_stop_effect: Box<dyn Fn()>,
         on_sleep: Box<dyn Fn(Option<u32>)>,
     ) {
-        let menu = gio::Menu::new();
-        let effects = gio::Menu::new();
-        effects.append(Some(&gettext("Candle")), Some("card.candle"));
-        effects.append(Some(&gettext("Sunrise")), Some("card.sunrise"));
-        effects.append(Some(&gettext("Color Loop")), Some("card.color-loop"));
-        effects.append(Some(&gettext("Stop Effect")), Some("card.stop-effect"));
-        menu.append_submenu(Some(&gettext("Effects")), &effects);
-        let sleep = gio::Menu::new();
-        sleep.append(Some(&gettext("15 minutes")), Some("card.sleep-15"));
-        sleep.append(Some(&gettext("30 minutes")), Some("card.sleep-30"));
-        sleep.append(Some(&gettext("60 minutes")), Some("card.sleep-60"));
-        sleep.append(Some(&gettext("Custom…")), Some("card.sleep-custom"));
-        sleep.append(Some(&gettext("Cancel Timer")), Some("card.sleep-cancel"));
-        menu.append_submenu(Some(&gettext("Sleep Timer")), &sleep);
-        menu.append(Some(&gettext("Rename…")), Some("card.rename"));
-        menu.append(Some(&gettext("Device Details")), Some("card.details"));
-        self.imp().card_menu.set_menu_model(Some(&menu));
+        let refresh_menu = {
+            let card = self.clone();
+            let device = device.clone();
+            Rc::new(move || {
+                card.imp()
+                    .card_menu
+                    .set_menu_model(Some(&card_menu(&device)));
+            })
+        };
+        refresh_menu();
+        for property in ["has-timer", "has-effects", "has-color", "flowing"] {
+            let refresh_menu = refresh_menu.clone();
+            device.connect_notify_local(Some(property), move |_, _| refresh_menu());
+        }
 
         let group = gio::SimpleActionGroup::new();
         let on_effect = Rc::new(on_effect);
         for (name, preset, needs_color) in [
             ("candle", EffectPreset::Candle, false),
             ("sunrise", EffectPreset::Sunrise, false),
-            ("color-loop", EffectPreset::ColorLoop, false),
+            ("color-loop", EffectPreset::ColorLoop, true),
         ] {
             let action = gio::SimpleAction::new(name, None);
             let callback = on_effect.clone();
@@ -419,10 +416,40 @@ impl DeviceCard {
     }
 }
 
+fn card_menu(device: &DeviceObject) -> gio::Menu {
+    let menu = gio::Menu::new();
+    if device.has_effects() {
+        let effects = gio::Menu::new();
+        effects.append(Some(&gettext("Candle")), Some("card.candle"));
+        effects.append(Some(&gettext("Sunrise")), Some("card.sunrise"));
+        if device.has_color() {
+            effects.append(Some(&gettext("Color Loop")), Some("card.color-loop"));
+        }
+        if device.flowing() {
+            effects.append(Some(&gettext("Stop Effect")), Some("card.stop-effect"));
+        }
+        menu.append_submenu(Some(&gettext("Effects")), &effects);
+    }
+    if device.has_timer() {
+        let sleep = gio::Menu::new();
+        sleep.append(Some(&gettext("15 minutes")), Some("card.sleep-15"));
+        sleep.append(Some(&gettext("30 minutes")), Some("card.sleep-30"));
+        sleep.append(Some(&gettext("60 minutes")), Some("card.sleep-60"));
+        sleep.append(Some(&gettext("Custom…")), Some("card.sleep-custom"));
+        sleep.append(Some(&gettext("Cancel Timer")), Some("card.sleep-cancel"));
+        menu.append_submenu(Some(&gettext("Sleep Timer")), &sleep);
+    }
+    menu.append(Some(&gettext("Rename…")), Some("card.rename"));
+    menu.append(Some(&gettext("Device Details")), Some("card.details"));
+    menu
+}
+
 fn present_custom_sleep(parent: &impl IsA<gtk::Widget>, on_confirm: impl Fn(u32) + 'static) {
     let dialog = adw::AlertDialog::new(
         Some(&gettext("Custom Timer")),
-        Some(&gettext("Choose how many minutes until the light turns off.")),
+        Some(&gettext(
+            "Choose how many minutes until the light turns off.",
+        )),
     );
     let minutes = adw::SpinRow::with_range(1.0, 720.0, 1.0);
     minutes.set_digits(0);
