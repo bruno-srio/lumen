@@ -87,6 +87,7 @@ async fn main() {
         stuck_quota,
         latency,
         drop_after: None,
+        cron_tick: std::time::Duration::from_secs(60),
     })
     .await
     .unwrap_or_else(|err| {

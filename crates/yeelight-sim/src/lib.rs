@@ -129,6 +129,7 @@ pub struct SimConfig {
     pub stuck_quota: bool,
     pub latency: Duration,
     pub drop_after: Option<u64>,
+    pub cron_tick: Duration,
 }
 
 impl Default for SimConfig {
@@ -140,6 +141,7 @@ impl Default for SimConfig {
             stuck_quota: false,
             latency: Duration::ZERO,
             drop_after: None,
+            cron_tick: Duration::from_secs(60),
         }
     }
 }
@@ -354,6 +356,28 @@ async fn spawn_bulb(
     let bulb = SimBulb {
         inner: inner.clone(),
     };
+    let tick_inner = inner.clone();
+    let mut shutdown_tick = shutdown.clone();
+    let cron_tick = config.cron_tick;
+    tokio::spawn(async move {
+        let mut ticker = tokio::time::interval(cron_tick);
+        ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        ticker.tick().await;
+        loop {
+            tokio::select! {
+                changed = shutdown_tick.changed() => {
+                    if changed.is_err() || *shutdown_tick.borrow() {
+                        break;
+                    }
+                }
+                _ = ticker.tick() => {
+                    if let Some(changed) = advance_sleep(&tick_inner) {
+                        publish(&tick_inner, &changed).await;
+                    }
+                }
+            }
+        }
+    });
     let task_bulb = bulb.clone();
     tokio::spawn(async move {
         let mut listener = listener;
@@ -688,6 +712,34 @@ fn apply_command(
         "set_default" => CommandOutcome::Ok,
         _ => CommandOutcome::Error("unsupported method"),
     }
+}
+
+fn advance_sleep(inner: &BulbInner) -> Option<LightState> {
+    let mut state = inner.state.lock().expect("bulb state");
+    if !state.power || state.delayoff == 0 {
+        return None;
+    }
+    if state.delayoff == 1 {
+        state.delayoff = 0;
+        state.power = false;
+        Some(LightState {
+            power: Some(false),
+            delayoff: Some(0),
+            ..LightState::default()
+        })
+    } else {
+        state.delayoff -= 1;
+        Some(LightState {
+            delayoff: Some(state.delayoff),
+            ..LightState::default()
+        })
+    }
+}
+
+async fn publish(inner: &BulbInner, changed: &LightState) {
+    let notification = encode_notification(changed);
+    let mut notes = inner.notes.lock().await;
+    notes.retain(|sender| sender.send(notification.clone()).is_ok());
 }
 
 fn color_state(state: &LiveState) -> LightState {
