@@ -20,6 +20,19 @@ jobs:
       - name: Test
         run: cargo test -p yeelight -p yeelight-sim
 
+  app:
+    name: App tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: GTK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev libadwaita-1-dev blueprint-compiler pkg-config xvfb
+      - name: Test
+        run: xvfb-run cargo test -p lumen
+
   flatpak:
     name: Flatpak
     runs-on: ubuntu-latest

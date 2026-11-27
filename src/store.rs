@@ -273,6 +273,13 @@ mod tests {
         let loaded = DeviceStore::open(path.clone());
         assert_eq!(loaded.presets()[0].kelvin, 2700);
         assert_eq!(loaded.groups()[0].name, "Room");
+        loaded.remove_preset(0);
+        assert!(loaded.presets().is_empty());
+        loaded.forget("0x1");
+        assert!(loaded.groups()[0].members.is_empty());
+        let reloaded = DeviceStore::open(path.clone());
+        assert!(reloaded.presets().is_empty());
+        assert!(reloaded.groups()[0].members.is_empty());
         let _ = fs::remove_file(path);
     }
 }

@@ -2,7 +2,22 @@
 
 Thanks for helping. Lumen is a small GNOME app. Keep changes focused and covered by a test when they touch the Yeelight protocol.
 
+## Building
+
+Contributors with GTK 4.20 or newer and libadwaita 1.8 or newer:
+
+```sh
+cargo test --workspace
+cargo run -p lumen
+```
+
+On Fedora, those libraries can stay inside the `yeelight-dev` Toolbox. `./scripts/dev.sh` uses that container when the host does not have them. After a Fedora upgrade, run `./scripts/dev.sh bootstrap` to recreate it. Details are in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+
 ## Build
+
+Day-to-day builds and tests go through [scripts/dev.sh](scripts/dev.sh). It runs Cargo on the host when GTK is visible to pkg-config, and otherwise in the `yeelight-dev` Toolbox. See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+
+A Meson build, used by Flatpak, still needs the toolchain on the machine that runs Meson:
 
 ```sh
 sudo dnf install rust cargo clippy rustfmt gtk4-devel libadwaita-devel \
@@ -15,10 +30,12 @@ _build/src/lumen
 ## Tests
 
 ```sh
-cargo test -p yeelight -p yeelight-sim
+./scripts/dev.sh test
+./scripts/dev.sh fmt --check
 cargo clippy -p yeelight -p yeelight-sim --all-targets -- -D warnings
-cargo fmt --all --check
 ```
+
+`./scripts/dev.sh test` runs the protocol crate and the app. On a machine where pkg-config can see GTK it runs on the host; otherwise it runs inside the Toolbox. Without a display, the app tests can also be run with `xvfb-run cargo test -p lumen` where those libraries are installed.
 
 `yeelight-sim` speaks the real LAN protocol, so most work does not need a bulb:
 

@@ -1,0 +1,38 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Lumen Development Build",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/dev.sh",
+      "args": ["run"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Lumen Tests",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/dev.sh",
+      "args": ["test"],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Check Lumen Compilation",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/dev.sh",
+      "args": ["check"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Check Rust Formatting",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/dev.sh",
+      "args": ["fmt", "--check"],
+      "problemMatcher": []
+    }
+  ]
+}

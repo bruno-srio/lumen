@@ -352,3 +352,48 @@ fn reason_text(reason: UnavailableReason) -> String {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use yeelight::ConnectionState;
+
+    fn init() {
+        gtk::init().expect("gtk");
+    }
+
+    #[test]
+    fn status_describes_power_effects_and_failures() {
+        init();
+        let device = DeviceObject::new("0xabc");
+        device.set_capabilities(&Capabilities::from_support(
+            &["set_power".into(), "set_bright".into(), "set_ct_abx".into()],
+            "ct_bulb",
+        ));
+        assert!(device.has_temperature());
+        assert!(!device.has_color());
+        assert!(device.has_tint());
+
+        device.set_connection(&ConnectionState::Online);
+        assert_eq!(device.status_text(), "Off");
+        assert!(!device.tint_enabled());
+
+        device.user_power(true);
+        assert!(device.tint_enabled());
+        assert!(device.status_text().starts_with("On"));
+
+        device.set_flowing(true);
+        device.refresh_status();
+        assert_eq!(device.status_text(), "Effect running");
+
+        device.set_flowing(false);
+        device.set_delayoff(25);
+        device.refresh_status();
+        assert_eq!(device.status_text(), "Off in 25 min");
+
+        device.set_connection(&ConnectionState::Unavailable(UnavailableReason::Refused));
+        assert!(device.status_text().contains("LAN Control"));
+        device.set_connection(&ConnectionState::Unavailable(UnavailableReason::StuckQuota));
+        assert!(device.status_text().contains("wall switch"));
+    }
+}
