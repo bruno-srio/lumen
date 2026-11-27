@@ -3,6 +3,8 @@
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+# shellcheck disable=SC1091
+. "$ROOT/scripts/workspace.sh"
 CONTAINER=${LUMEN_TOOLBOX:-yeelight-dev}
 
 usage() {
@@ -66,6 +68,8 @@ lumen_pids() {
     pgrep -f '[c]argo run -p lumen' || true
     pgrep -f '[t]arget/yeelight-dev/debug/lumen' || true
     pgrep -f '[t]arget/debug/lumen' || true
+    pgrep -f '[c]argo/toolbox/debug/lumen' || true
+    pgrep -f '[c]argo/host/debug/lumen' || true
   } | awk 'NF && !seen[$0]++'
 }
 
@@ -113,14 +117,15 @@ maybe_start_simulator() {
     return
   fi
   echo "Starting the Yeelight simulator. It answers discovery for every Lumen on this machine, including the installed Flatpak, until this script exits." >&2
-  sim_log="${ROOT}/target/yeelight-dev/simulator.log"
-  mkdir -p "${ROOT}/target/yeelight-dev"
+  mkdir -p "$LUMEN_WORK/logs"
+  sim_log="$LUMEN_WORK/logs/simulator.log"
   : > "$sim_log"
   if [ "$1" = host ]; then
-    cargo run -p yeelight-sim >"$sim_log" 2>&1 &
+    env "CARGO_TARGET_DIR=$CARGO_DIR" \
+      cargo run -p yeelight-sim >"$sim_log" 2>&1 &
   else
     toolbox run -c "$CONTAINER" \
-      env "CARGO_TARGET_DIR=${ROOT}/target/yeelight-dev" \
+      env "CARGO_TARGET_DIR=$CARGO_DIR" \
       cargo run -p yeelight-sim >"$sim_log" 2>&1 &
   fi
   sim_pid=$!
@@ -311,6 +316,22 @@ case "$cmd" in
     ;;
 esac
 
+prepare_cargo_dir() {
+  case "$cmd" in
+    run|test|check|sim) ;;
+    *) return 0 ;;
+  esac
+  LUMEN_WORK=$(python3 "$ROOT/scripts/require_work.py" "$LUMEN_WORK" "$ROOT")
+  if [ "$host_gtk" -eq 1 ]; then
+    CARGO_DIR="$LUMEN_WORK/cargo/host"
+  else
+    CARGO_DIR="$LUMEN_WORK/cargo/toolbox"
+  fi
+  mkdir -p "$CARGO_DIR"
+}
+
+prepare_cargo_dir
+
 trap stop_simulator EXIT
 trap on_signal INT HUP TERM
 
@@ -324,7 +345,10 @@ if [ "$host_gtk" -eq 1 ]; then
   fi
   status=0
   if [ "$cmd" = test ]; then
-    python3 "$ROOT/scripts/test-report.py" cargo "$@" || status=$?
+    python3 "$ROOT/scripts/test-report.py" \
+      env "CARGO_TARGET_DIR=$CARGO_DIR" cargo "$@" || status=$?
+  elif [ -n "${CARGO_DIR:-}" ]; then
+    env "CARGO_TARGET_DIR=$CARGO_DIR" cargo "$@" || status=$?
   else
     cargo "$@" || status=$?
   fi
@@ -358,12 +382,14 @@ status=0
 if [ "$cmd" = test ]; then
   python3 "$ROOT/scripts/test-report.py" \
     toolbox run -c "$CONTAINER" \
-    env "CARGO_TARGET_DIR=${ROOT}/target/yeelight-dev" \
+    env "CARGO_TARGET_DIR=$CARGO_DIR" \
+    cargo "$@" || status=$?
+elif [ -n "${CARGO_DIR:-}" ]; then
+  toolbox run -c "$CONTAINER" \
+    env "CARGO_TARGET_DIR=$CARGO_DIR" \
     cargo "$@" || status=$?
 else
-  toolbox run -c "$CONTAINER" \
-    env "CARGO_TARGET_DIR=${ROOT}/target/yeelight-dev" \
-    cargo "$@" || status=$?
+  toolbox run -c "$CONTAINER" cargo "$@" || status=$?
 fi
 report_fmt "$status"
 if [ "$cmd" = sim ]; then
