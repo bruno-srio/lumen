@@ -9,7 +9,7 @@ jobs:
     name: Protocol tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -24,7 +24,7 @@ jobs:
     name: App tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - name: GTK
         run: |
@@ -38,15 +38,18 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51
-      options: --privileged
+      # The image stores its SDK on an overlay layer. Updating that SDK renames
+      # directories across filesystems and fails with "Invalid cross-device link".
+      # An anonymous volume copies the installation onto the runner's filesystem.
+      options: --privileged -v /var/lib/flatpak
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
           bundle: lumen-devel.flatpak
           manifest-path: build-aux/io.github.bruno_srio.Lumen.Devel.json
           cache-key: flatpak-gnome-51
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: lumen-devel-flatpak
           path: lumen-devel.flatpak
