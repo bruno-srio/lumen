@@ -2,6 +2,12 @@
 
 Thanks for helping. Lumen is a small GNOME app. Keep changes focused and covered by a test when they touch the Yeelight protocol.
 
+## Pull requests
+
+Do new work on a branch and open a pull request. CI runs the protocol tests, the app tests, and the development Flatpak build on that request. Merge only after those checks pass.
+
+GitHub shows **Delete branch** as soon as the pull request is merged. Use it. Merged branches, including a release branch after that version is on `main`, do not stay on the remote.
+
 ## Building
 
 Contributors with GTK 4.20 or newer and libadwaita 1.8 or newer:
