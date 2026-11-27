@@ -109,6 +109,7 @@ template $LumenWindow : Adw.ApplicationWindow {
                 child: Adw.Clamp {
                   maximum-size: 1100;
                   tightening-threshold: 360;
+                  valign: start;
 
                   child: FlowBox devices_box {
                     margin-top: 12;
@@ -119,6 +120,8 @@ template $LumenWindow : Adw.ApplicationWindow {
                     column-spacing: 12;
                     selection-mode: none;
                     homogeneous: true;
+                    valign: start;
+                    vexpand: false;
                     min-children-per-line: 1;
                     max-children-per-line: 3;
                     activate-on-single-click: false;
@@ -142,6 +145,7 @@ template $LumenWindow : Adw.ApplicationWindow {
                     child: Adw.Clamp {
                       maximum-size: 1100;
                       tightening-threshold: 360;
+                      valign: start;
 
                       child: FlowBox groups_box {
                         margin-top: 12;
@@ -152,6 +156,8 @@ template $LumenWindow : Adw.ApplicationWindow {
                         column-spacing: 12;
                         selection-mode: none;
                         homogeneous: true;
+                        valign: start;
+                        vexpand: false;
                         min-children-per-line: 1;
                         max-children-per-line: 3;
                       };
