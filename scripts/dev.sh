@@ -323,7 +323,11 @@ if [ "$host_gtk" -eq 1 ]; then
     echo "Running the Yeelight simulator in the foreground. The installed Lumen will see these bulbs until you press Ctrl-C." >&2
   fi
   status=0
-  cargo "$@" || status=$?
+  if [ "$cmd" = test ]; then
+    python3 "$ROOT/scripts/test-report.py" cargo "$@" || status=$?
+  else
+    cargo "$@" || status=$?
+  fi
   report_fmt "$status"
   if [ "$cmd" = sim ]; then
     say_sim_stopped
@@ -351,9 +355,16 @@ elif [ "$cmd" = sim ]; then
 fi
 
 status=0
-toolbox run -c "$CONTAINER" \
-  env "CARGO_TARGET_DIR=${ROOT}/target/yeelight-dev" \
-  cargo "$@" || status=$?
+if [ "$cmd" = test ]; then
+  python3 "$ROOT/scripts/test-report.py" \
+    toolbox run -c "$CONTAINER" \
+    env "CARGO_TARGET_DIR=${ROOT}/target/yeelight-dev" \
+    cargo "$@" || status=$?
+else
+  toolbox run -c "$CONTAINER" \
+    env "CARGO_TARGET_DIR=${ROOT}/target/yeelight-dev" \
+    cargo "$@" || status=$?
+fi
 report_fmt "$status"
 if [ "$cmd" = sim ]; then
   say_sim_stopped

@@ -54,7 +54,7 @@ These development packages are installed in the current container and in the ima
 ./scripts/dev.sh stop         # stop a simulator left running
 ./scripts/dev.sh run          # same as the first command
 ./scripts/dev.sh run --release
-./scripts/dev.sh test         # protocol crate and the app
+./scripts/dev.sh test         # protocol crate and the app, with a pass or fail summary
 ./scripts/dev.sh test parse_probe_address
 ./scripts/dev.sh check
 ./scripts/dev.sh fmt
