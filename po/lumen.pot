@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: lumen 0.2.0\n"
+"Project-Id-Version: lumen\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 04:01+0000\n"
+"POT-Creation-Date: 2026-11-27 06:26+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,6 +16,38 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+
+#: src/group_icons.rs:40
+msgid "Home"
+msgstr ""
+
+#: src/group_icons.rs:41
+msgid "Bed"
+msgstr ""
+
+#: src/group_icons.rs:42
+msgid "Sofa"
+msgstr ""
+
+#: src/group_icons.rs:43
+msgid "Desk"
+msgstr ""
+
+#: src/group_icons.rs:44
+msgid "Kitchen"
+msgstr ""
+
+#: src/group_icons.rs:45
+msgid "Bath"
+msgstr ""
+
+#: src/group_icons.rs:46
+msgid "Sun"
+msgstr ""
+
+#: src/group_icons.rs:47
+msgid "Lamp"
+msgstr ""
 
 #: src/model/device_object.rs:276
 msgid "Connecting…"
@@ -30,6 +62,7 @@ msgid "Effect running"
 msgstr ""
 
 #: src/model/device_object.rs:287
+#, rust-format
 msgid "Off in {} min"
 msgstr ""
 
@@ -41,19 +74,19 @@ msgstr ""
 msgid "On"
 msgstr ""
 
-#: src/model/device_object.rs:307 src/widgets/device_card.rs:303
-#: src/widgets/device_card.blp:43 src/widgets/group_card.blp:43
+#: src/model/device_object.rs:307 src/widgets/device_card.rs:304
+#: src/widgets/device_card.blp:45 src/widgets/group_card.blp:61
 msgid "Power"
 msgstr ""
 
-#: src/model/device_object.rs:310 src/widgets/device_card.rs:302
-#: src/widgets/device_card.blp:58 src/widgets/group_card.blp:50
+#: src/model/device_object.rs:310 src/widgets/device_card.rs:303
+#: src/widgets/device_card.blp:60 src/widgets/group_card.blp:68
 msgid "Brightness"
 msgstr ""
 
-#: src/model/device_object.rs:313 src/widgets/device_card.blp:78
-#: src/widgets/device_card.blp:79 src/widgets/color_popover.blp:14
-#: src/widgets/group_card.blp:61 src/widgets/group_card.blp:62
+#: src/model/device_object.rs:313 src/widgets/device_card.blp:80
+#: src/widgets/device_card.blp:81 src/widgets/color_popover.blp:14
+#: src/widgets/group_card.blp:79 src/widgets/group_card.blp:80
 msgid "Color"
 msgstr ""
 
@@ -61,7 +94,7 @@ msgstr ""
 msgid "Color temperature"
 msgstr ""
 
-#: src/model/device_object.rs:319 src/widgets/device_card.rs:331
+#: src/model/device_object.rs:319 src/widgets/device_card.rs:437
 msgid "Effects"
 msgstr ""
 
@@ -73,7 +106,7 @@ msgstr ""
 msgid "No controls reported"
 msgstr ""
 
-#: src/model/device_object.rs:344 src/widgets/window.rs:489
+#: src/model/device_object.rs:344 src/widgets/window.rs:655
 msgid "The light did not respond."
 msgstr ""
 
@@ -94,157 +127,203 @@ msgstr ""
 msgid "Not responding — turn the light off and on at the wall switch."
 msgstr ""
 
-#: src/widgets/mod.rs:35
+#: src/widgets/mod.rs:37
 msgid "General"
 msgstr ""
 
-#: src/widgets/mod.rs:37 src/widgets/mod.rs:40
+#: src/widgets/mod.rs:39 src/widgets/mod.rs:42
 msgid "Search for Lights"
 msgstr ""
 
-#: src/widgets/mod.rs:42
+#: src/widgets/mod.rs:44
 msgid "Rename Focused Light"
 msgstr ""
 
-#: src/widgets/mod.rs:46 src/widgets/window.rs:195
+#: src/widgets/mod.rs:48 src/widgets/window.rs:240
 msgid "Keyboard Shortcuts"
 msgstr ""
 
-#: src/widgets/mod.rs:50
+#: src/widgets/mod.rs:52
 msgid "Close Window"
 msgstr ""
 
-#: src/widgets/mod.rs:54 src/widgets/window.rs:188
+#: src/widgets/mod.rs:56 src/widgets/window.rs:232
 msgid "All Lights On"
 msgstr ""
 
-#: src/widgets/mod.rs:58 src/widgets/window.rs:189
+#: src/widgets/mod.rs:60 src/widgets/window.rs:233
 msgid "All Lights Off"
 msgstr ""
 
-#: src/widgets/mod.rs:61
+#: src/widgets/mod.rs:63
 msgid "Quit"
 msgstr ""
 
-#: src/widgets/mod.rs:72
+#: src/widgets/mod.rs:74
 msgid "Control Yeelight lights on your local network."
 msgstr ""
 
-#: src/widgets/window.rs:191
+#: src/widgets/window.rs:235
 msgid "Add Light by Address…"
 msgstr ""
 
-#: src/widgets/window.rs:194
+#: src/widgets/window.rs:238
 msgid "New Group…"
 msgstr ""
 
-#: src/widgets/window.rs:196
+#: src/widgets/window.rs:239
+msgid "Preferences"
+msgstr ""
+
+#: src/widgets/window.rs:241
 msgid "About Lumen"
 msgstr ""
 
-#: src/widgets/window.rs:484
+#: src/widgets/window.rs:479
+msgid "Background"
+msgstr ""
+
+#: src/widgets/window.rs:481
+msgid "Run in Background"
+msgstr ""
+
+#: src/widgets/window.rs:483
+msgid ""
+"Closing the window keeps the lights connected. Toggle All Lights can then be "
+"set as a system shortcut."
+msgstr ""
+
+#: src/widgets/window.rs:574
+msgid "The session did not allow Lumen to run in the background."
+msgstr ""
+
+#: src/widgets/window.rs:650
 msgid "Light"
 msgstr ""
 
-#: src/widgets/window.rs:487
+#: src/widgets/window.rs:653
 msgid "This light does not support that control."
 msgstr ""
 
-#: src/widgets/window.rs:490
+#: src/widgets/window.rs:656
 msgid "The light rejected the change."
 msgstr ""
 
-#: src/widgets/window.rs:496
+#: src/widgets/window.rs:662
+#, rust-format
 msgid "No light answered at {}. Check LAN Control."
 msgstr ""
 
-#: src/widgets/window.rs:623
+#: src/widgets/window.rs:805
 msgid "Forgot this light. It will reappear if it is still on the network."
 msgstr ""
 
-#: src/widgets/window.rs:655
+#: src/widgets/window.rs:837
+#, rust-format
 msgid "Saved {}"
 msgstr ""
 
-#: src/widgets/window.rs:662
+#: src/widgets/window.rs:844
+#, rust-format
 msgid "White {}K"
 msgstr ""
 
-#: src/widgets/window.rs:680
+#: src/widgets/window.rs:862
 msgid "Add Light by Address"
 msgstr ""
 
-#: src/widgets/window.rs:682
+#: src/widgets/window.rs:864
 msgid "Enter the light's IP address. LAN Control must be enabled."
 msgstr ""
 
-#: src/widgets/window.rs:690 src/widgets/rename_dialog.blp:24
-#: src/widgets/group_dialog.blp:32
+#: src/widgets/window.rs:872 src/widgets/device_card.rs:465
+#: src/widgets/rename_dialog.blp:24 src/widgets/group_dialog.blp:32
 msgid "Cancel"
 msgstr ""
 
-#: src/widgets/window.rs:691
+#: src/widgets/window.rs:873
 msgid "Add"
 msgstr ""
 
-#: src/widgets/window.rs:717
+#: src/widgets/window.rs:891
 msgid "Enter an IP address, like 192.168.1.20."
 msgstr ""
 
-#: src/widgets/window.rs:723
+#: src/widgets/window.rs:897
+#, rust-format
 msgid "Looking for a light at {}…"
 msgstr ""
 
-#: src/widgets/window.rs:752 src/widgets/group_card.blp:36
+#: src/widgets/window.rs:926 src/widgets/group_card.blp:54
 msgid "Edit Group"
 msgstr ""
 
-#: src/widgets/window.rs:754
+#: src/widgets/window.rs:928 src/widgets/window.blp:177
 msgid "New Group"
 msgstr ""
 
-#: src/widgets/device_card.rs:327
+#: src/widgets/device_card.rs:429
 msgid "Candle"
 msgstr ""
 
-#: src/widgets/device_card.rs:328
+#: src/widgets/device_card.rs:430
 msgid "Sunrise"
 msgstr ""
 
-#: src/widgets/device_card.rs:329
+#: src/widgets/device_card.rs:432
 msgid "Color Loop"
 msgstr ""
 
-#: src/widgets/device_card.rs:330
+#: src/widgets/device_card.rs:435
 msgid "Stop Effect"
 msgstr ""
 
-#: src/widgets/device_card.rs:333
+#: src/widgets/device_card.rs:441
 msgid "15 minutes"
 msgstr ""
 
-#: src/widgets/device_card.rs:334
+#: src/widgets/device_card.rs:442
 msgid "30 minutes"
 msgstr ""
 
-#: src/widgets/device_card.rs:335
+#: src/widgets/device_card.rs:443
 msgid "60 minutes"
 msgstr ""
 
-#: src/widgets/device_card.rs:336
+#: src/widgets/device_card.rs:444 src/widgets/color_popover.blp:100
+msgid "Custom…"
+msgstr ""
+
+#: src/widgets/device_card.rs:445
 msgid "Cancel Timer"
 msgstr ""
 
-#: src/widgets/device_card.rs:337
+#: src/widgets/device_card.rs:446
 msgid "Sleep Timer"
 msgstr ""
 
-#: src/widgets/device_card.rs:338
+#: src/widgets/device_card.rs:448
 msgid "Rename…"
 msgstr ""
 
-#: src/widgets/device_card.rs:339 src/widgets/device_details.blp:5
+#: src/widgets/device_card.rs:449 src/widgets/device_details.blp:5
 msgid "Device Details"
+msgstr ""
+
+#: src/widgets/device_card.rs:455
+msgid "Custom Timer"
+msgstr ""
+
+#: src/widgets/device_card.rs:457
+msgid "Choose how many minutes until the light turns off."
+msgstr ""
+
+#: src/widgets/device_card.rs:463
+msgid "Minutes"
+msgstr ""
+
+#: src/widgets/device_card.rs:466
+msgid "Set Timer"
 msgstr ""
 
 #: src/widgets/color_popover.rs:246
@@ -293,49 +372,67 @@ msgid ""
 "symbols."
 msgstr ""
 
-#: src/widgets/group_card.rs:110
+#: src/widgets/group_card.rs:125
 msgid "No lights"
 msgstr ""
 
-#: src/widgets/group_card.rs:112
+#: src/widgets/group_card.rs:127
+#, rust-format
 msgid "{on} of {total} on"
 msgstr ""
 
-#: src/widgets/window.blp:5
+#: src/widgets/window.blp:5 data/io.github.bruno_srio.Lumen.desktop.in:2
+#: data/io.github.bruno_srio.Lumen.metainfo.xml.in:4
 msgid "Lumen"
 msgstr ""
 
-#: src/widgets/window.blp:18 src/widgets/window.blp:56
+#: src/widgets/window.blp:30 src/widgets/window.blp:79
 msgid "Search Again"
 msgstr ""
 
-#: src/widgets/window.blp:25
+#: src/widgets/window.blp:37
 msgid "Main Menu"
 msgstr ""
 
-#: src/widgets/window.blp:37
+#: src/widgets/window.blp:60
 msgid "Looking for lights…"
 msgstr ""
 
-#: src/widgets/window.blp:38
+#: src/widgets/window.blp:61
 msgid "Searching the local network for Yeelight lights."
 msgstr ""
 
-#: src/widgets/window.blp:46
+#: src/widgets/window.blp:69
 msgid "No Lights Found"
 msgstr ""
 
-#: src/widgets/window.blp:47
+#: src/widgets/window.blp:70
 msgid ""
 "Turn on LAN Control for each light in the Yeelight app, then make sure this "
 "computer is on the same network."
 msgstr ""
 
-#: src/widgets/window.blp:63
+#: src/widgets/window.blp:86
 msgid "How to Enable LAN Control"
 msgstr ""
 
-#: src/widgets/device_card.blp:85
+#: src/widgets/window.blp:103
+msgid "Lights"
+msgstr ""
+
+#: src/widgets/window.blp:135
+msgid "Groups"
+msgstr ""
+
+#: src/widgets/window.blp:172
+msgid "No Groups"
+msgstr ""
+
+#: src/widgets/window.blp:173
+msgid "Group lights so one switch controls a room."
+msgstr ""
+
+#: src/widgets/device_card.blp:87
 msgid "Device Menu"
 msgstr ""
 
@@ -349,10 +446,6 @@ msgstr ""
 
 #: src/widgets/color_popover.blp:81
 msgid "Saturation"
-msgstr ""
-
-#: src/widgets/color_popover.blp:100
-msgid "Custom…"
 msgstr ""
 
 #: src/widgets/color_popover.blp:120
@@ -429,8 +522,8 @@ msgstr ""
 msgid "Forget Device"
 msgstr ""
 
-#: src/widgets/window.blp:83
-msgid "Groups"
+#: src/widgets/group_card.blp:29
+msgid "Choose an icon"
 msgstr ""
 
 #: src/widgets/group_dialog.blp:5
@@ -454,49 +547,73 @@ msgid "Light Controller"
 msgstr ""
 
 #: data/io.github.bruno_srio.Lumen.desktop.in:4
+#: data/io.github.bruno_srio.Lumen.metainfo.xml.in:5
 msgid "Control Yeelight lights on your local network"
 msgstr ""
 
-#: data/io.github.bruno_srio.Lumen.metainfo.xml.in:18
-msgid "Lumen finds Yeelight lights on the local network and lets you turn them on or off, change brightness, set a color or a white temperature, save colors, group lights, run an effect, and set a sleep timer. It is a native GNOME application and does not need a Yeelight account or an internet connection."
+#: data/io.github.bruno_srio.Lumen.desktop.in:10
+msgid "light;bulb;lamp;yeelight;"
 msgstr ""
 
-#: data/io.github.bruno_srio.Lumen.metainfo.xml.in:21
-msgid "LAN Control has to be enabled for each light in the Yeelight mobile app. Names you choose are stored on this computer and stay attached to the light even if its IP address changes."
+#: data/io.github.bruno_srio.Lumen.metainfo.xml.in:7
+msgid "Bruno Ribeiro"
 msgstr ""
 
-#: data/io.github.bruno_srio.Lumen.metainfo.xml.in:24
-msgid "Yeelight is a trademark of its owner. Lumen is an independent project and is not affiliated with Yeelight."
+#: data/io.github.bruno_srio.Lumen.metainfo.xml.in:17
+msgid ""
+"Lumen finds Yeelight lights on the local network and lets you turn them on "
+"or off, change brightness, set a color or a white temperature, save colors, "
+"group lights, run an effect, and set a sleep timer. It is a native GNOME "
+"application and does not need a Yeelight account or an internet connection."
 msgstr ""
 
-#: src/widgets/window.rs
-msgid "Preferences"
+#: data/io.github.bruno_srio.Lumen.metainfo.xml.in:20
+msgid ""
+"LAN Control has to be enabled for each light in the Yeelight mobile app. "
+"Names you choose are stored on this computer and stay attached to the light "
+"even if its IP address changes."
 msgstr ""
 
-#: src/widgets/window.rs
-msgid "Background"
+#: data/io.github.bruno_srio.Lumen.metainfo.xml.in:23
+msgid ""
+"Yeelight is a trademark of its owner. Lumen is an independent project and is "
+"not affiliated with Yeelight."
 msgstr ""
 
-#: src/widgets/window.rs
-msgid "Run in Background"
+#: data/io.github.bruno_srio.Lumen.metainfo.xml.in:33
+msgid "The light list, with power, brightness, and color controls"
 msgstr ""
 
-#: src/widgets/window.rs
-msgid "Closing the window keeps the lights connected. Toggle All Lights can then be set as a system shortcut."
+#: data/io.github.bruno_srio.Lumen.metainfo.xml.in:37
+msgid "Lumen in the dark style"
 msgstr ""
 
-#: src/widgets/window.rs
-msgid "The session did not allow Lumen to run in the background."
+#: data/io.github.bruno_srio.Lumen.metainfo.xml.in:44
+msgid ""
+"Lights and groups are on separate pages. A group can have an icon, the sleep "
+"timer accepts a custom duration, and each light's menu shows only the "
+"controls that light supports."
 msgstr ""
 
-#: src/portals.rs
-msgid "Keep controlling lights after the window is closed, and listen for the Toggle All Lights shortcut."
+#: data/io.github.bruno_srio.Lumen.metainfo.xml.in:49
+msgid "Group cards use the same inner padding as light cards."
 msgstr ""
 
-#: src/portals.rs
-msgid "Toggle All Lights"
+#: data/io.github.bruno_srio.Lumen.metainfo.xml.in:54
+msgid ""
+"The window can stay connected after it is closed, and Toggle All Lights can "
+"be bound as a system shortcut."
 msgstr ""
 
-#: data/io.github.bruno_srio.Lumen.metainfo.xml.in
-msgid "The window can stay connected after it is closed, and Toggle All Lights can be bound as a system shortcut."
+#: data/io.github.bruno_srio.Lumen.metainfo.xml.in:59
+msgid ""
+"Adds color temperature, saved colors, groups, effects, a sleep timer, all-on "
+"and all-off, adding a light by address, an optional name stored on the bulb, "
+"and a Brazilian Portuguese translation."
+msgstr ""
+
+#: data/io.github.bruno_srio.Lumen.metainfo.xml.in:64
+msgid ""
+"Power, brightness, and color changes are sent to the lights. Names and "
+"addresses are remembered between launches."
 msgstr ""

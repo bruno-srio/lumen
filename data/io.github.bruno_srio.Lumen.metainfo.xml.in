@@ -39,6 +39,11 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.4.0" date="2026-11-27">
+      <description>
+        <p>Lights and groups are on separate pages. A group can have an icon, the sleep timer accepts a custom duration, and each light's menu shows only the controls that light supports.</p>
+      </description>
+    </release>
     <release version="0.3.1" date="2026-11-27">
       <description>
         <p>Group cards use the same inner padding as light cards.</p>

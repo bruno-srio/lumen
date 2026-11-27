@@ -263,7 +263,7 @@ fn icon_popover(on_choose: Box<dyn Fn(String)>, current: &str) -> gtk::Popover {
     for icon in GROUP_ICONS {
         let button = gtk::ToggleButton::new();
         button.set_icon_name(icon.id);
-        let label = gettext(icon.label);
+        let label = icon.label();
         button.set_tooltip_text(Some(&label));
         button.update_property(&[gtk::accessible::Property::Label(&label)]);
         button.add_css_class("flat");

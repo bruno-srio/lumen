@@ -1,7 +1,8 @@
+use gettextrs::gettext;
+
 /// Symbolic icons a group can show beside its name.
 pub struct GroupIcon {
     pub id: &'static str,
-    pub label: &'static str,
 }
 
 pub const DEFAULT_GROUP_ICON: &str = "lumen-lamp-symbolic";
@@ -9,37 +10,44 @@ pub const DEFAULT_GROUP_ICON: &str = "lumen-lamp-symbolic";
 pub const GROUP_ICONS: &[GroupIcon] = &[
     GroupIcon {
         id: "lumen-lamp-symbolic",
-        label: "Lamp",
     },
     GroupIcon {
         id: "lumen-home-symbolic",
-        label: "Home",
     },
     GroupIcon {
         id: "lumen-bed-symbolic",
-        label: "Bed",
     },
     GroupIcon {
         id: "lumen-sofa-symbolic",
-        label: "Sofa",
     },
     GroupIcon {
         id: "lumen-desk-symbolic",
-        label: "Desk",
     },
     GroupIcon {
         id: "lumen-kitchen-symbolic",
-        label: "Kitchen",
     },
     GroupIcon {
         id: "lumen-bath-symbolic",
-        label: "Bath",
     },
     GroupIcon {
         id: "lumen-sun-symbolic",
-        label: "Sun",
     },
 ];
+
+impl GroupIcon {
+    pub fn label(&self) -> String {
+        match self.id {
+            "lumen-home-symbolic" => gettext("Home"),
+            "lumen-bed-symbolic" => gettext("Bed"),
+            "lumen-sofa-symbolic" => gettext("Sofa"),
+            "lumen-desk-symbolic" => gettext("Desk"),
+            "lumen-kitchen-symbolic" => gettext("Kitchen"),
+            "lumen-bath-symbolic" => gettext("Bath"),
+            "lumen-sun-symbolic" => gettext("Sun"),
+            _ => gettext("Lamp"),
+        }
+    }
+}
 
 pub fn normalize_group_icon(icon: &str) -> &'static str {
     GROUP_ICONS

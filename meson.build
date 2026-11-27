@@ -1,7 +1,7 @@
 project(
   'lumen',
   'rust',
-  version: '0.3.1',
+  version: '0.4.0',
   meson_version: '>= 1.1',
   license: 'GPL-3.0-or-later',
   default_options: ['warning_level=2'],
