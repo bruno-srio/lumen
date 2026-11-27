@@ -1,4 +1,5 @@
 use super::{ColorPopover, TintChoice};
+use crate::group_icons::{normalize_group_icon, GROUP_ICONS};
 use crate::model::{DeviceList, DeviceObject};
 use gettextrs::gettext;
 use glib::subclass::prelude::*;
@@ -12,6 +13,7 @@ pub struct GroupHooks {
     pub brightness: Box<dyn Fn(u8)>,
     pub tint: Box<dyn Fn(TintChoice)>,
     pub edit: Box<dyn Fn()>,
+    pub choose_icon: Box<dyn Fn(String)>,
     pub presets: Box<dyn Fn() -> Vec<(String, TintChoice)>>,
     pub save_preset: Box<dyn Fn(TintChoice)>,
     pub remove_preset: Box<dyn Fn(usize)>,
@@ -23,6 +25,10 @@ mod imp {
     #[derive(Default, gtk::CompositeTemplate)]
     #[template(resource = "/io/github/bruno_srio/Lumen/group_card.ui")]
     pub struct GroupCard {
+        #[template_child]
+        pub icon_button: TemplateChild<gtk::MenuButton>,
+        #[template_child]
+        pub icon_image: TemplateChild<gtk::Image>,
         #[template_child]
         pub name_label: TemplateChild<gtk::Label>,
         #[template_child]
@@ -66,8 +72,17 @@ glib::wrapper! {
 }
 
 impl GroupCard {
-    pub fn new(name: &str, members: Vec<String>, devices: DeviceList, hooks: GroupHooks) -> Self {
+    pub fn new(
+        name: &str,
+        icon: &str,
+        members: Vec<String>,
+        devices: DeviceList,
+        hooks: GroupHooks,
+    ) -> Self {
         let card: Self = glib::Object::new();
+        card.imp()
+            .icon_image
+            .set_icon_name(Some(normalize_group_icon(icon)));
         card.imp().name_label.set_label(name);
         card.imp().members.replace(members);
         card.imp().brightness_scale.set_range(1.0, 100.0);
@@ -136,11 +151,21 @@ impl GroupCard {
             brightness,
             tint,
             edit,
+            choose_icon,
             presets,
             save_preset,
             remove_preset,
         } = hooks;
         self.imp().edit_button.connect_clicked(move |_| edit());
+        let current = self
+            .imp()
+            .icon_image
+            .icon_name()
+            .map(|name| name.to_string())
+            .unwrap_or_default();
+        self.imp()
+            .icon_button
+            .set_popover(Some(&icon_popover(choose_icon, &current)));
 
         let imp = self.imp();
         let card = self.downgrade();
@@ -218,4 +243,51 @@ impl GroupCard {
         self.imp().color_button.set_popover(Some(&popover));
         self.refresh_from(&devices);
     }
+}
+
+fn icon_popover(on_choose: Box<dyn Fn(String)>, current: &str) -> gtk::Popover {
+    let popover = gtk::Popover::new();
+    let flow = gtk::FlowBox::new();
+    flow.set_selection_mode(gtk::SelectionMode::None);
+    flow.set_homogeneous(true);
+    flow.set_min_children_per_line(4);
+    flow.set_max_children_per_line(4);
+    flow.set_column_spacing(6);
+    flow.set_row_spacing(6);
+    flow.set_margin_top(6);
+    flow.set_margin_bottom(6);
+    flow.set_margin_start(6);
+    flow.set_margin_end(6);
+    let on_choose = Rc::new(on_choose);
+    let mut leader: Option<gtk::ToggleButton> = None;
+    for icon in GROUP_ICONS {
+        let button = gtk::ToggleButton::new();
+        button.set_icon_name(icon.id);
+        let label = gettext(icon.label);
+        button.set_tooltip_text(Some(&label));
+        button.update_property(&[gtk::accessible::Property::Label(&label)]);
+        button.add_css_class("flat");
+        button.add_css_class("group-icon");
+        if let Some(leader) = leader.as_ref() {
+            button.set_group(Some(leader));
+        } else {
+            leader = Some(button.clone());
+        }
+        button.set_active(icon.id == current);
+        let on_choose = on_choose.clone();
+        let popover = popover.downgrade();
+        let id = icon.id.to_string();
+        button.connect_toggled(move |button| {
+            if !button.is_active() {
+                return;
+            }
+            on_choose(id.clone());
+            if let Some(popover) = popover.upgrade() {
+                popover.popdown();
+            }
+        });
+        flow.insert(&button, -1);
+    }
+    popover.set_child(Some(&flow));
+    popover
 }

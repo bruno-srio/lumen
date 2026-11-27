@@ -55,6 +55,7 @@ async fn discovers_controls_and_reconnects() {
         stuck_quota: false,
         latency: Duration::ZERO,
         drop_after: None,
+        cron_tick: Duration::from_secs(60),
     })
     .await
     .expect("simulator");
@@ -177,6 +178,7 @@ async fn off_bulb_rejects_brightness_and_quota_can_stick() {
         stuck_quota: false,
         latency: Duration::ZERO,
         drop_after: None,
+        cron_tick: Duration::from_secs(60),
     })
     .await
     .unwrap();
@@ -284,6 +286,7 @@ async fn temperature_effect_and_probe() {
         stuck_quota: false,
         latency: Duration::ZERO,
         drop_after: None,
+        cron_tick: Duration::from_secs(60),
     })
     .await
     .unwrap();
@@ -434,6 +437,7 @@ async fn white_temperature_and_mono_rejection() {
         stuck_quota: false,
         latency: Duration::ZERO,
         drop_after: None,
+        cron_tick: Duration::from_secs(60),
     })
     .await
     .unwrap();
@@ -539,6 +543,7 @@ async fn probe_rejects_public_and_closed_ports() {
         stuck_quota: false,
         latency: Duration::ZERO,
         drop_after: None,
+        cron_tick: Duration::from_secs(60),
     })
     .await
     .unwrap();
@@ -572,6 +577,81 @@ async fn probe_rejects_public_and_closed_ports() {
     })
     .await;
     assert!(matches!(closed, BackendEvent::ProbeFailed { addr } if addr.contains("127.0.0.1")));
+    let _ = commands.send(BackendCommand::Shutdown).await;
+    let _ = manager.await;
+}
+
+#[tokio::test]
+async fn simulated_sleep_timer_counts_down() {
+    let sim = SimNetwork::start(SimConfig {
+        discovery_port: 0,
+        multicast: false,
+        bulbs: vec![BulbSpec::color("0x000000000000c010", "Timer")],
+        stuck_quota: false,
+        latency: Duration::ZERO,
+        drop_after: None,
+        cron_tick: Duration::from_millis(40),
+    })
+    .await
+    .unwrap();
+    let (commands, command_rx) = async_channel::bounded(32);
+    let (event_tx, events) = async_channel::bounded(32);
+    let manager = tokio::spawn(run_manager(
+        command_rx,
+        event_tx,
+        test_config(sim.discovery_addr()),
+    ));
+    let discovery = sim.discovery_addr();
+    let probe = std::net::SocketAddr::from((std::net::Ipv4Addr::LOCALHOST, discovery.port()));
+    commands
+        .send(BackendCommand::Probe { addr: probe })
+        .await
+        .unwrap();
+    let BackendEvent::DeviceSeen(info) = wait_for(&events, Duration::from_secs(3), |event| {
+        matches!(event, BackendEvent::DeviceSeen(_))
+    })
+    .await
+    else {
+        unreachable!()
+    };
+    wait_for(&events, Duration::from_secs(3), |event| {
+        matches!(
+            event,
+            BackendEvent::ConnectionChanged {
+                state: ConnectionState::Online,
+                ..
+            }
+        )
+    })
+    .await;
+    commands
+        .send(BackendCommand::SleepTimer {
+            id: info.id,
+            minutes: Some(2),
+        })
+        .await
+        .unwrap();
+    tokio::time::timeout(Duration::from_secs(2), async {
+        loop {
+            if sim.bulbs()[0].snapshot().await.delayoff == 1 {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .expect("timer did not count down");
+    tokio::time::timeout(Duration::from_secs(2), async {
+        loop {
+            let snap = sim.bulbs()[0].snapshot().await;
+            if snap.delayoff == 0 && !snap.power {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .expect("timer did not turn the bulb off");
     let _ = commands.send(BackendCommand::Shutdown).await;
     let _ = manager.await;
 }

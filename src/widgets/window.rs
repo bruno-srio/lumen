@@ -4,16 +4,17 @@ use super::{
 };
 use crate::backend::Backend;
 use crate::commands::{
-    parse_probe_address, receives_brightness, receives_power, receives_tint, toggle_all_target,
-    FanoutMember, TintKind,
+    clamp_sleep_minutes, parse_probe_address, receives_brightness, receives_power, receives_tint,
+    toggle_all_target, FanoutMember, TintKind,
 };
 use crate::config::APP_ID;
+use crate::group_icons::{default_group_icon, normalize_group_icon};
 use crate::model::{DeviceList, DeviceObject};
 use crate::store::{DeviceStore, StoredGroup, StoredPreset};
 use crate::widgets::DeviceCard;
 use adw::prelude::{
-    ActionRowExt, AdwDialogExt, AlertDialogExt, PreferencesDialogExt, PreferencesGroupExt,
-    PreferencesPageExt, PreferencesRowExt,
+    ActionRowExt, AdwApplicationWindowExt, AdwDialogExt, AlertDialogExt, PreferencesDialogExt,
+    PreferencesGroupExt, PreferencesPageExt, PreferencesRowExt,
 };
 use gettextrs::gettext;
 use glib::subclass::prelude::*;
@@ -38,9 +39,19 @@ mod imp {
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
+        pub header_bar: TemplateChild<adw::HeaderBar>,
+        #[template_child]
+        pub app_icon: TemplateChild<gtk::Image>,
+        #[template_child]
+        pub header_switcher: TemplateChild<adw::ViewSwitcher>,
+        #[template_child]
+        pub section_bar: TemplateChild<adw::ViewSwitcherBar>,
+        #[template_child]
+        pub section_stack: TemplateChild<adw::ViewStack>,
+        #[template_child]
         pub devices_box: TemplateChild<gtk::FlowBox>,
         #[template_child]
-        pub groups_heading: TemplateChild<gtk::Label>,
+        pub groups_stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub groups_box: TemplateChild<gtk::FlowBox>,
         pub backend: OnceCell<Backend>,
@@ -105,6 +116,13 @@ impl Window {
         self.imp().backend.set(backend).ok();
         self.bind_devices();
         self.rebuild_groups();
+        let window = self.downgrade();
+        self.connect_current_breakpoint_notify(move |_| {
+            if let Some(window) = window.upgrade() {
+                window.sync_section_switcher();
+            }
+        });
+        self.sync_section_switcher();
         self.refresh();
         if settings().is_some_and(|settings| settings.boolean("run-in-background")) {
             self.set_hide_on_close(true);
@@ -424,6 +442,13 @@ impl Window {
     }
 
     fn send_sleep(&self, id: &str, minutes: Option<u32>) {
+        let minutes = match minutes {
+            Some(value) => match clamp_sleep_minutes(value as f64) {
+                Some(minutes) => Some(minutes),
+                None => return,
+            },
+            None => None,
+        };
         if let Some(device) = self.imp().devices.find(id) {
             device.set_delayoff(minutes.unwrap_or(0));
             device.refresh_status();
@@ -654,6 +679,22 @@ impl Window {
             "empty"
         };
         self.imp().stack.set_visible_child_name(name);
+        self.sync_section_switcher();
+    }
+
+    fn sync_section_switcher(&self) {
+        let on_devices = self.imp().stack.visible_child_name().as_deref() == Some("devices");
+        let narrow = self.current_breakpoint().is_some();
+        let show_switcher = on_devices && !narrow;
+        if show_switcher {
+            self.imp()
+                .header_bar
+                .set_title_widget(Some(&self.imp().header_switcher.get()));
+        } else {
+            self.imp().header_bar.set_title_widget(None::<&gtk::Widget>);
+        }
+        self.imp().app_icon.set_visible(show_switcher);
+        self.imp().section_bar.set_visible(on_devices && narrow);
     }
 
     fn toast(&self, text: &str) {
@@ -895,6 +936,10 @@ impl Window {
         let window = self.downgrade();
         let save_id = group_id.clone();
         let delete_id = group_id;
+        let kept_icon = existing
+            .as_ref()
+            .map(|group| group.icon.clone())
+            .unwrap_or_else(default_group_icon);
         GroupDialog::present_for(
             self,
             &heading,
@@ -909,7 +954,12 @@ impl Window {
                     .clone()
                     .unwrap_or_else(|| format!("group-{}", glib::real_time().unsigned_abs()));
                 if let Some(store) = window.imp().store.get() {
-                    store.save_group(StoredGroup { id, name, members });
+                    store.save_group(StoredGroup {
+                        id,
+                        name,
+                        members,
+                        icon: kept_icon.clone(),
+                    });
                 }
                 window.rebuild_groups();
             },
@@ -935,14 +985,15 @@ impl Window {
             groups_box.remove(&child);
         }
         let Some(store) = self.imp().store.get() else {
-            groups_box.set_visible(false);
-            self.imp().groups_heading.set_visible(false);
+            self.imp().groups_stack.set_visible_child_name("empty");
             return;
         };
         let groups = store.groups();
-        let show_groups = !groups.is_empty();
-        groups_box.set_visible(show_groups);
-        self.imp().groups_heading.set_visible(show_groups);
+        if groups.is_empty() {
+            self.imp().groups_stack.set_visible_child_name("empty");
+            return;
+        }
+        self.imp().groups_stack.set_visible_child_name("list");
         for group in groups {
             let members = group.members.clone();
             let name = group.name.clone();
@@ -953,6 +1004,7 @@ impl Window {
             let tint_members = members;
             let card = GroupCard::new(
                 &name,
+                normalize_group_icon(&stored.icon),
                 stored.members.clone(),
                 self.imp().devices.clone(),
                 GroupHooks {
@@ -987,6 +1039,22 @@ impl Window {
                             if let Some(window) = window.upgrade() {
                                 window.edit_group(Some(stored.clone()));
                             }
+                        }
+                    }),
+                    choose_icon: Box::new({
+                        let window = window.clone();
+                        let stored = stored.clone();
+                        move |icon| {
+                            let Some(window) = window.upgrade() else {
+                                return;
+                            };
+                            let Some(store) = window.imp().store.get() else {
+                                return;
+                            };
+                            let mut group = stored.clone();
+                            group.icon = icon;
+                            store.save_group(group);
+                            window.rebuild_groups();
                         }
                     }),
                     presets: Box::new({

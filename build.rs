@@ -18,6 +18,10 @@ fn main() {
     println!("cargo:rerun-if-changed=src/widgets");
     println!("cargo:rerun-if-changed=data/resources/style.css");
     println!("cargo:rerun-if-changed=data/resources/resources.gresource.xml");
+    println!("cargo:rerun-if-changed=data/resources/icons");
+    println!(
+        "cargo:rerun-if-changed=data/icons/hicolor/scalable/apps/io.github.bruno_srio.Lumen.svg"
+    );
 
     let manifest_dir =
         PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
@@ -40,7 +44,11 @@ fn main() {
     }
 
     glib_build_tools::compile_resources(
-        &[ui_dir.to_str().expect("utf-8"), "data/resources"],
+        &[
+            ui_dir.to_str().expect("utf-8"),
+            "data/resources",
+            "data/icons",
+        ],
         "data/resources/resources.gresource.xml",
         "lumen.gresource",
     );

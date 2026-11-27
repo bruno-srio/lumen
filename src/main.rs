@@ -2,6 +2,7 @@ mod application;
 mod backend;
 mod commands;
 mod config;
+mod group_icons;
 mod model;
 mod portals;
 mod store;

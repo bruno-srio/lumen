@@ -4,6 +4,7 @@
 /.flatpak-builder/
 /repo/
 /.direnv/
+/.cursor/
 **/*.flatpak
 .cargo/config.toml
 *.gresource

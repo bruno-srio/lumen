@@ -50,15 +50,19 @@ These development packages are installed in the current container and in the ima
 ```sh
 ./scripts/dev.sh              # build and launch Lumen, and start the simulator if it is not running
 ./scripts/dev.sh sim          # run only the simulator
+./scripts/dev.sh status       # show whether the simulator and dev Lumen are running
+./scripts/dev.sh stop         # stop a simulator left running
 ./scripts/dev.sh run          # same as the first command
 ./scripts/dev.sh run --release
-./scripts/dev.sh test         # protocol crate and the app
+./scripts/dev.sh test         # protocol crate and the app, with a pass or fail summary
 ./scripts/dev.sh test parse_probe_address
 ./scripts/dev.sh check
 ./scripts/dev.sh fmt
 ./scripts/dev.sh fmt --check
 ./scripts/dev.sh bootstrap    # recreate the Toolbox after a Fedora upgrade
 ```
+
+A simulator left running is found by the installed app on refresh. `./scripts/dev.sh status` shows it, and `./scripts/dev.sh stop` ends it. The script says when it starts a simulator and when that simulator stops, including if the terminal is closed.
 
 In Cursor, the same commands are tasks: Run Lumen Development Build, Run Lumen Tests, Check Lumen Compilation, and Check Rust Formatting. They call the script rather than Cargo.
 
