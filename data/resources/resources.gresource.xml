@@ -9,7 +9,8 @@
     <file>group_card.ui</file>
     <file>group_dialog.ui</file>
     <file compressed="true">style.css</file>
-    <file alias="app-icon.svg">hicolor/scalable/apps/io.github.bruno_srio.Lumen.svg</file>
+    <!-- Files listed here must live in data/resources. Flatpak does not search data/icons. -->
+    <file>app-icon.svg</file>
   </gresource>
   <gresource prefix="/io/github/bruno_srio/Lumen/icons/scalable/actions">
     <file alias="lumen-lamp-symbolic.svg">icons/lumen-lamp-symbolic.svg</file>
