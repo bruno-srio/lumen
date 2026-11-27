@@ -39,6 +39,10 @@ mod imp {
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
+        pub header_bar: TemplateChild<adw::HeaderBar>,
+        #[template_child]
+        pub app_icon: TemplateChild<gtk::Image>,
+        #[template_child]
         pub header_switcher: TemplateChild<adw::ViewSwitcher>,
         #[template_child]
         pub section_bar: TemplateChild<adw::ViewSwitcherBar>,
@@ -681,9 +685,15 @@ impl Window {
     fn sync_section_switcher(&self) {
         let on_devices = self.imp().stack.visible_child_name().as_deref() == Some("devices");
         let narrow = self.current_breakpoint().is_some();
-        self.imp()
-            .header_switcher
-            .set_visible(on_devices && !narrow);
+        let show_switcher = on_devices && !narrow;
+        if show_switcher {
+            self.imp()
+                .header_bar
+                .set_title_widget(Some(&self.imp().header_switcher.get()));
+        } else {
+            self.imp().header_bar.set_title_widget(None::<&gtk::Widget>);
+        }
+        self.imp().app_icon.set_visible(show_switcher);
         self.imp().section_bar.set_visible(on_devices && narrow);
     }
 

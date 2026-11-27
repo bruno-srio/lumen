@@ -15,7 +15,15 @@ template $LumenWindow : Adw.ApplicationWindow {
   Adw.ToastOverlay toast_overlay {
     Adw.ToolbarView {
       [top]
-      Adw.HeaderBar {
+      Adw.HeaderBar header_bar {
+        [start]
+        Image app_icon {
+          resource: "/io/github/bruno_srio/Lumen/app-icon.svg";
+          pixel-size: 32;
+          margin-end: 6;
+          visible: false;
+        }
+
         [start]
         Button refresh_button {
           icon-name: "view-refresh-symbolic";
