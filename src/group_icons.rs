@@ -52,3 +52,22 @@ pub fn normalize_group_icon(icon: &str) -> &'static str {
 pub fn default_group_icon() -> String {
     DEFAULT_GROUP_ICON.to_string()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn known_icon_stays_itself() {
+        assert_eq!(
+            normalize_group_icon("lumen-bed-symbolic"),
+            "lumen-bed-symbolic"
+        );
+    }
+
+    #[test]
+    fn unknown_icon_falls_back_to_the_lamp() {
+        assert_eq!(normalize_group_icon(""), DEFAULT_GROUP_ICON);
+        assert_eq!(normalize_group_icon("missing"), DEFAULT_GROUP_ICON);
+    }
+}

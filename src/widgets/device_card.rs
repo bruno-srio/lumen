@@ -1,5 +1,5 @@
 use super::{ColorPopover, TintChoice};
-use crate::commands::clamp_sleep_minutes;
+use crate::commands::{card_menu_sections, clamp_sleep_minutes};
 use crate::model::DeviceObject;
 use adw::prelude::*;
 use gettextrs::gettext;
@@ -417,20 +417,26 @@ impl DeviceCard {
 }
 
 fn card_menu(device: &DeviceObject) -> gio::Menu {
+    let sections = card_menu_sections(
+        device.has_effects(),
+        device.has_color(),
+        device.flowing(),
+        device.has_timer(),
+    );
     let menu = gio::Menu::new();
-    if device.has_effects() {
+    if sections.effects {
         let effects = gio::Menu::new();
         effects.append(Some(&gettext("Candle")), Some("card.candle"));
         effects.append(Some(&gettext("Sunrise")), Some("card.sunrise"));
-        if device.has_color() {
+        if sections.color_loop {
             effects.append(Some(&gettext("Color Loop")), Some("card.color-loop"));
         }
-        if device.flowing() {
+        if sections.stop_effect {
             effects.append(Some(&gettext("Stop Effect")), Some("card.stop-effect"));
         }
         menu.append_submenu(Some(&gettext("Effects")), &effects);
     }
-    if device.has_timer() {
+    if sections.sleep_timer {
         let sleep = gio::Menu::new();
         sleep.append(Some(&gettext("15 minutes")), Some("card.sleep-15"));
         sleep.append(Some(&gettext("30 minutes")), Some("card.sleep-30"));
