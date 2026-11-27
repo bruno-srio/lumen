@@ -8,25 +8,38 @@ template $LumenGroupCard : Box {
   margin-start: 6;
   margin-end: 6;
   width-request: 280;
+  vexpand: false;
+  valign: start;
   css-classes: ["card", "group-card"];
 
   Box {
     spacing: 8;
-
-    Image icon_image {
-      pixel-size: 24;
-      valign: center;
-    }
 
     Box {
       orientation: vertical;
       hexpand: true;
       spacing: 2;
 
-      Label name_label {
-        halign: start;
-        ellipsize: end;
-        css-classes: ["title-4"];
+      Box {
+        spacing: 6;
+
+        MenuButton icon_button {
+          css-classes: ["flat", "group-icon-button"];
+          valign: center;
+          tooltip-text: _("Choose an icon");
+
+          child: Image icon_image {
+            pixel-size: 28;
+          };
+        }
+
+        Label name_label {
+          halign: start;
+          valign: center;
+          hexpand: true;
+          ellipsize: end;
+          css-classes: ["title-4"];
+        }
       }
 
       Label status_label {

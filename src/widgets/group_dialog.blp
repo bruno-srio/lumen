@@ -15,22 +15,6 @@ template $LumenGroupDialog : Adw.AlertDialog {
       activates-default: true;
     }
 
-    Label {
-      label: _("Icon");
-      halign: start;
-      css-classes: ["heading"];
-    }
-
-    FlowBox icons {
-      selection-mode: none;
-      homogeneous: true;
-      min-children-per-line: 4;
-      max-children-per-line: 8;
-      column-spacing: 6;
-      row-spacing: 6;
-      halign: center;
-    }
-
     ScrolledWindow {
       hscrollbar-policy: never;
       min-content-height: 160;

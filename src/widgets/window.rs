@@ -8,8 +8,8 @@ use crate::commands::{
     toggle_all_target, FanoutMember, TintKind,
 };
 use crate::config::APP_ID;
+use crate::group_icons::{default_group_icon, normalize_group_icon};
 use crate::model::{DeviceList, DeviceObject};
-use crate::group_icons::normalize_group_icon;
 use crate::store::{DeviceStore, StoredGroup, StoredPreset};
 use crate::widgets::DeviceCard;
 use adw::prelude::{
@@ -926,18 +926,17 @@ impl Window {
         let window = self.downgrade();
         let save_id = group_id.clone();
         let delete_id = group_id;
-        let current_icon = existing
+        let kept_icon = existing
             .as_ref()
             .map(|group| group.icon.clone())
-            .unwrap_or_default();
+            .unwrap_or_else(default_group_icon);
         GroupDialog::present_for(
             self,
             &heading,
             &current_name,
-            &current_icon,
             lights,
             allow_delete,
-            move |name, icon, members| {
+            move |name, members| {
                 let Some(window) = window.upgrade() else {
                     return;
                 };
@@ -949,7 +948,7 @@ impl Window {
                         id,
                         name,
                         members,
-                        icon,
+                        icon: kept_icon.clone(),
                     });
                 }
                 window.rebuild_groups();
@@ -1030,6 +1029,22 @@ impl Window {
                             if let Some(window) = window.upgrade() {
                                 window.edit_group(Some(stored.clone()));
                             }
+                        }
+                    }),
+                    choose_icon: Box::new({
+                        let window = window.clone();
+                        let stored = stored.clone();
+                        move |icon| {
+                            let Some(window) = window.upgrade() else {
+                                return;
+                            };
+                            let Some(store) = window.imp().store.get() else {
+                                return;
+                            };
+                            let mut group = stored.clone();
+                            group.icon = icon;
+                            store.save_group(group);
+                            window.rebuild_groups();
                         }
                     }),
                     presets: Box::new({

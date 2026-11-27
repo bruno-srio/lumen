@@ -1,6 +1,4 @@
-use crate::group_icons::{normalize_group_icon, GROUP_ICONS};
 use adw::prelude::*;
-use gettextrs::gettext;
 use glib::subclass::prelude::*;
 use gtk::subclass::prelude::*;
 use std::cell::RefCell;
@@ -14,8 +12,6 @@ mod imp {
     pub struct GroupDialog {
         #[template_child]
         pub name_entry: TemplateChild<gtk::Entry>,
-        #[template_child]
-        pub icons: TemplateChild<gtk::FlowBox>,
         #[template_child]
         pub members: TemplateChild<gtk::ListBox>,
     }
@@ -52,10 +48,9 @@ impl GroupDialog {
         parent: &impl IsA<gtk::Widget>,
         heading: &str,
         current_name: &str,
-        current_icon: &str,
         lights: Vec<(String, String, bool)>,
         allow_delete: bool,
-        on_save: impl Fn(String, String, Vec<String>) + 'static,
+        on_save: impl Fn(String, Vec<String>) + 'static,
         on_delete: impl Fn() + 'static,
     ) {
         let dialog: Self = glib::Object::new();
@@ -68,33 +63,6 @@ impl GroupDialog {
             dialog.set_response_appearance("delete", adw::ResponseAppearance::Destructive);
         }
         dialog.set_response_appearance("save", adw::ResponseAppearance::Suggested);
-
-        let chosen = normalize_group_icon(current_icon);
-        let selected = Rc::new(RefCell::new(chosen.to_string()));
-        let mut leader: Option<gtk::ToggleButton> = None;
-        for icon in GROUP_ICONS {
-            let button = gtk::ToggleButton::new();
-            button.set_icon_name(icon.id);
-            let label = gettext(icon.label);
-            button.set_tooltip_text(Some(&label));
-            button.update_property(&[gtk::accessible::Property::Label(&label)]);
-            button.add_css_class("flat");
-            button.add_css_class("group-icon");
-            if let Some(leader) = leader.as_ref() {
-                button.set_group(Some(leader));
-            } else {
-                leader = Some(button.clone());
-            }
-            button.set_active(icon.id == chosen);
-            let selected = selected.clone();
-            let id = icon.id;
-            button.connect_toggled(move |button| {
-                if button.is_active() {
-                    *selected.borrow_mut() = id.to_string();
-                }
-            });
-            dialog.imp().icons.insert(&button, -1);
-        }
 
         let checks: Rc<RefCell<Vec<(String, gtk::CheckButton)>>> =
             Rc::new(RefCell::new(Vec::new()));
@@ -127,7 +95,7 @@ impl GroupDialog {
                 .filter(|(_, check)| check.is_active())
                 .map(|(id, _)| id.clone())
                 .collect();
-            on_save(name, selected.borrow().clone(), members);
+            on_save(name, members);
         });
         dialog.present(Some(parent));
     }
