@@ -40,6 +40,17 @@ Yeelight is a trademark of its owner. Lumen is an independent project and is not
 
 Each bulb has LAN Control (sometimes called Developer Mode) turned off until you enable it in the Yeelight mobile app, in that light's settings. The computer and the lights must be on the same network. The steps are in [docs/LAN-CONTROL.md](docs/LAN-CONTROL.md).
 
+## Building
+
+Contributors with GTK 4.20 or newer and libadwaita 1.8 or newer:
+
+```sh
+cargo test --workspace
+cargo run -p lumen
+```
+
+On Fedora, those libraries can stay inside the `yeelight-dev` Toolbox. `./scripts/dev.sh` uses that container when the host does not have them. After a Fedora upgrade, run `./scripts/dev.sh bootstrap` to recreate it. Details are in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+
 ## Build from source
 
 Fedora, or another distribution with GTK 4.20, libadwaita 1.8, and Rust 1.87:

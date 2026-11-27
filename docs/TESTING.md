@@ -5,11 +5,10 @@
 From the repository root:
 
 ```sh
-cargo test -p yeelight -p yeelight-sim
-cargo test -p lumen
+./scripts/dev.sh test
 ```
 
-The first command covers message parsing, capability detection, the command scheduler, and simulator sessions. It does not need a display. The second command covers saved names, groups, and the rules for group commands and add-by-address. It builds the GTK interface, so it needs GTK 4, libadwaita, and `blueprint-compiler`. Run it under a display, or with `xvfb-run cargo test -p lumen` when there is none.
+That runs both suites inside the `yeelight-dev` Toolbox. The protocol suite covers message parsing, capability detection, the command scheduler, and simulator sessions. It does not need a display. The app suite covers saved names, groups, and the rules for group commands and add-by-address. It builds the GTK interface, so the Toolbox must have GTK 4, libadwaita, and `blueprint-compiler`. See [DEVELOPMENT.md](DEVELOPMENT.md). Without a display, run `xvfb-run cargo test -p lumen` from inside the container.
 
 ## Simulator
 
