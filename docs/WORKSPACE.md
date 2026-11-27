@@ -1,29 +1,23 @@
 # Workspace
 
-Source stays in the Git repository. Generated files go under `LUMEN_WORK`.
+This is how I lay out files on my machine. It is not a requirement for building Lumen. If you only run Cargo, you can ignore the extra directories.
+
+`LUMEN_WORK` defaults to `$HOME/Code/workspaces/Lumen`. The assignment is in [`scripts/workspace.sh`](../scripts/workspace.sh). A non-empty value replaces that default. The path is rejected when it is a symlink, or when it is equal to, inside, or a parent of `~/.config`, `~/.var`, `~/.local`, `~/Code/repos`, or this repository. `$HOME` and `~/Code` are rejected because they contain `~/Code/repos`.
 
 ```text
 ~/Code/repos/yeelight-control/     this repository
-~/Code/workspaces/Lumen/           default LUMEN_WORK
+~/Code/workspaces/Lumen/           my LUMEN_WORK
   cargo/toolbox/                   Toolbox Cargo output
   cargo/host/                      host Cargo output, when GTK is on the host
   flatpak/state/devel/             Flatpak state for the development build
   flatpak/state/release/           Flatpak state for the release build
-  flatpak/build/                   disposable build trees
+  flatpak/build/                   build trees I can delete
   flatpak/repo/                    OSTree repositories
   flatpak/lumen-devel.flatpak      development bundle
-  packages/vX.Y.Z/                 kept release bundles
+  packages/vX.Y.Z/                 release bundles I keep
   packages/local/                  dirty test bundles only
   logs/                            simulator and Flatpak logs
 ```
-
-The default is set in [`scripts/workspace.sh`](../scripts/workspace.sh):
-
-```sh
-LUMEN_WORK="${LUMEN_WORK:-$HOME/Code/workspaces/Lumen}"
-```
-
-A non-empty `LUMEN_WORK` always wins. The path is rejected when it is a symlink, or when it is equal to, inside, or an ancestor of `~/.config`, `~/.var`, `~/.local`, `~/Code/repos`, or this repository. `$HOME` and `~/Code` are rejected for that reason.
 
 ```sh
 ./scripts/lumen dev
@@ -34,6 +28,6 @@ A non-empty `LUMEN_WORK` always wins. The path is rejected when it is a symlink,
 ./scripts/lumen clean
 ```
 
-`clean` prints a dry-run. `--yes` deletes only the listed generated directories: `target/`, `_build/`, and `.flatpak-builder` inside the repository, plus `$LUMEN_WORK/flatpak/build` and `$LUMEN_WORK/flatpak/repo`. A `lumen-<version>.flatpak` in the repository root is deleted only when it is a regular file and byte-identical to `$LUMEN_WORK/packages/v<version>/`. `$LUMEN_WORK/cargo` stays unless `--cargo` is passed. Logs stay unless `--logs` is passed. Flatpak state stays unless `--caches` is passed. `packages/` is never deleted. A symlink is skipped rather than followed.
+`clean` prints a dry-run. `--yes` deletes only listed generated paths: `target/`, `_build/`, and `.flatpak-builder` in the repository, plus `$LUMEN_WORK/cargo/toolbox`, `$LUMEN_WORK/cargo/host`, `$LUMEN_WORK/flatpak/build`, and `$LUMEN_WORK/flatpak/repo`. A `lumen-<version>.flatpak` in the repository root is deleted only when it is a regular file and byte-identical to the copy in `$LUMEN_WORK/packages/v<version>/`. `--caches` adds the Flatpak state directories. `--logs` adds regular files in `logs/`. `packages/` is never deleted. A symlink is skipped rather than followed.
 
-`./scripts/lumen bootstrap` recreates the `yeelight-dev` Toolbox from [build-aux/yeelight-dev.Containerfile](../build-aux/yeelight-dev.Containerfile). It does not install GTK on the host. Daily Cargo commands and the Toolbox choice are described in [DEVELOPMENT.md](DEVELOPMENT.md). Flatpak export is described in [PACKAGING.md](PACKAGING.md).
+`./scripts/lumen bootstrap` recreates my `yeelight-dev` Toolbox from [build-aux/yeelight-dev.Containerfile](../build-aux/yeelight-dev.Containerfile). It does not install GTK on the host. How I run Cargo day to day is in [DEVELOPMENT.md](DEVELOPMENT.md). Flatpak export is in [PACKAGING.md](PACKAGING.md).
