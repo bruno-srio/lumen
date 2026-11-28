@@ -21,5 +21,7 @@
     <file alias="lumen-kitchen-symbolic.svg">icons/lumen-kitchen-symbolic.svg</file>
     <file alias="lumen-bath-symbolic.svg">icons/lumen-bath-symbolic.svg</file>
     <file alias="lumen-sun-symbolic.svg">icons/lumen-sun-symbolic.svg</file>
+    <file alias="lumen-lights-symbolic.svg">icons/lumen-lights-symbolic.svg</file>
+    <file alias="lumen-groups-symbolic.svg">icons/lumen-groups-symbolic.svg</file>
   </gresource>
 </gresources>
