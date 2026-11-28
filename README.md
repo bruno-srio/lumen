@@ -13,15 +13,7 @@
 </p>
 
 <p align="center">
-  <img src="data/screenshots/lights.png" width="640" alt="The Lights page, with power and brightness for each bulb">
-</p>
-
-<p align="center">
-  <img src="data/screenshots/groups.png" width="640" alt="The Groups page, with a group name and icon">
-</p>
-
-<p align="center">
-  <img src="data/screenshots/lights-dark.png" width="640" alt="The Lights page in the dark style, with power and brightness for each bulb">
+  <img src="data/screenshots/lights.png" width="640" alt="The Lights page, with power, brightness, and the groups each bulb belongs to">
 </p>
 
 Lumen is a GNOME app for Yeelight lights on the local network. You can turn them on or off, set the brightness, pick a color or a white temperature, save colors, and control a group together. It does not use a Yeelight account, a cloud API, or an internet connection.
