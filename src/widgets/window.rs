@@ -991,11 +991,13 @@ impl Window {
         }
         let Some(store) = self.imp().store.get() else {
             self.imp().groups_stack.set_visible_child_name("empty");
+            self.refresh_device_groups();
             return;
         };
         let groups = store.groups();
         if groups.is_empty() {
             self.imp().groups_stack.set_visible_child_name("empty");
+            self.refresh_device_groups();
             return;
         }
         self.imp().groups_stack.set_visible_child_name("list");
@@ -1090,6 +1092,26 @@ impl Window {
                 },
             );
             groups_box.insert(&card, -1);
+        }
+        self.refresh_device_groups();
+    }
+
+    fn refresh_device_groups(&self) {
+        let Some(store) = self.imp().store.get() else {
+            return;
+        };
+        let groups = store.groups();
+        let mut child = self.imp().devices_box.first_child();
+        while let Some(widget) = child {
+            let next = widget.next_sibling();
+            if let Some(card) = widget
+                .downcast_ref::<gtk::FlowBoxChild>()
+                .and_then(|row| row.child())
+                .and_then(|inner| inner.downcast::<DeviceCard>().ok())
+            {
+                card.set_groups(&groups);
+            }
+            child = next;
         }
     }
 
