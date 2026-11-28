@@ -50,15 +50,17 @@ flatpak run --command=flatpak-builder-lint org.flatpak.Builder \
 
 ## Screenshots in AppStream
 
-[data/io.github.bruno_srio.Lumen.metainfo.xml.in](../data/io.github.bruno_srio.Lumen.metainfo.xml.in) still points at `https://raw.githubusercontent.com/bruno-srio/lumen/v0.2.0/data/screenshots/`. Those URLs work and show the old UI. I am not changing them until the new images are on `main` or a release tag. A raw URL for a commit that is not on GitHub yet would 404, and a local path does not belong in the metadata.
+AppStream uses the images in [data/screenshots/flathub/](../data/screenshots/flathub/). The README uses the single compact `data/screenshots/lights.png`, which is not listed in the metainfo.
 
-After the images are public, set each `<image>` to:
+Each `<image>` in [data/io.github.bruno_srio.Lumen.metainfo.xml.in](../data/io.github.bruno_srio.Lumen.metainfo.xml.in) points at the release tag:
 
 ```text
-https://raw.githubusercontent.com/bruno-srio/lumen/<ref>/data/screenshots/<file>.png
+https://raw.githubusercontent.com/bruno-srio/lumen/v<version>/data/screenshots/flathub/<file>.png
 ```
 
-`<ref>` is that branch or tag. If `appstreamcli` is installed, run `appstreamcli validate` on the metainfo file. This is not a Flathub submission.
+Those URLs return 404 until the `v<version>` tag is pushed. That is expected before a release. Do not point them back at an older tag, and do not use a local path. After pushing the tag, open each URL once to confirm it loads.
+
+If `appstreamcli` is installed, run `appstreamcli validate` on the metainfo file. This is not a Flathub submission.
 
 ## Permissions
 

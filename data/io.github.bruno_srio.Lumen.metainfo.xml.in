@@ -30,12 +30,20 @@
   <url type="donation">https://github.com/sponsors/bruno-srio</url>
   <screenshots>
     <screenshot type="default">
-      <caption>The light list, with power, brightness, and color controls</caption>
-      <image>https://raw.githubusercontent.com/bruno-srio/lumen/v0.2.0/data/screenshots/lights.png</image>
+      <caption>The light list, with power, brightness, and the groups each light belongs to</caption>
+      <image>https://raw.githubusercontent.com/bruno-srio/lumen/v0.4.1/data/screenshots/flathub/lights.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Groups, each with its own icon and controls</caption>
+      <image>https://raw.githubusercontent.com/bruno-srio/lumen/v0.4.1/data/screenshots/flathub/groups.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Color and white temperature controls for a light</caption>
+      <image>https://raw.githubusercontent.com/bruno-srio/lumen/v0.4.1/data/screenshots/flathub/color.png</image>
     </screenshot>
     <screenshot>
       <caption>Lumen in the dark style</caption>
-      <image>https://raw.githubusercontent.com/bruno-srio/lumen/v0.2.0/data/screenshots/lights-dark.png</image>
+      <image>https://raw.githubusercontent.com/bruno-srio/lumen/v0.4.1/data/screenshots/flathub/lights-dark.png</image>
     </screenshot>
   </screenshots>
   <releases>
