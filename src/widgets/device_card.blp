@@ -33,6 +33,28 @@ template $LumenDeviceCard : Box {
         css-classes: ["title-4"];
       }
 
+      Box groups_row {
+        spacing: 4;
+        halign: start;
+
+        Box icons_box {
+          spacing: 4;
+          visible: false;
+        }
+
+        Label overflow_label {
+          visible: false;
+          css-classes: ["dimmed", "caption"];
+          accessible-role: presentation;
+        }
+
+        Label no_group_label {
+          label: _("No group");
+          halign: start;
+          css-classes: ["dimmed", "caption"];
+        }
+      }
+
       Label status_label {
         halign: start;
         ellipsize: end;

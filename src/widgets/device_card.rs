@@ -1,6 +1,7 @@
 use super::{ColorPopover, TintChoice};
 use crate::commands::{card_menu_sections, clamp_sleep_minutes};
 use crate::model::DeviceObject;
+use crate::store::{groups_containing, present_group_row, StoredGroup};
 use adw::prelude::*;
 use gettextrs::gettext;
 use glib::subclass::prelude::*;
@@ -33,6 +34,14 @@ mod imp {
         pub color_dot: TemplateChild<gtk::DrawingArea>,
         #[template_child]
         pub name_label: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub groups_row: TemplateChild<gtk::Box>,
+        #[template_child]
+        pub icons_box: TemplateChild<gtk::Box>,
+        #[template_child]
+        pub overflow_label: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub no_group_label: TemplateChild<gtk::Label>,
         #[template_child]
         pub status_label: TemplateChild<gtk::Label>,
         #[template_child]
@@ -106,6 +115,43 @@ impl DeviceCard {
 
     pub fn device_id(&self) -> String {
         self.widget_name().to_string()
+    }
+
+    /// Replace the group row from the saved groups. Membership is not cached on the card.
+    pub fn set_groups(&self, groups: &[StoredGroup]) {
+        let marks = groups_containing(groups, &self.device_id());
+        let row = present_group_row(&marks);
+        let imp = self.imp();
+        while let Some(child) = imp.icons_box.first_child() {
+            imp.icons_box.remove(&child);
+        }
+        let grouped = !row.icons.is_empty();
+        imp.no_group_label.set_visible(!grouped);
+        imp.icons_box.set_visible(grouped);
+        for mark in &row.icons {
+            let image = gtk::Image::from_icon_name(&mark.icon);
+            image.set_pixel_size(16);
+            image.set_accessible_role(gtk::AccessibleRole::Presentation);
+            image.set_tooltip_text(Some(&row.tooltip));
+            imp.icons_box.append(&image);
+        }
+        if row.overflow > 0 {
+            imp.overflow_label.set_label(&format!("+{}", row.overflow));
+            imp.overflow_label.set_tooltip_text(Some(&row.tooltip));
+            imp.overflow_label.set_visible(true);
+        } else {
+            imp.overflow_label.set_visible(false);
+            imp.overflow_label.set_tooltip_text(None);
+        }
+        if grouped {
+            imp.groups_row.set_tooltip_text(Some(&row.tooltip));
+            imp.groups_row
+                .update_property(&[gtk::accessible::Property::Description(&row.tooltip)]);
+        } else {
+            imp.groups_row.set_tooltip_text(None);
+            imp.groups_row
+                .update_property(&[gtk::accessible::Property::Description("")]);
+        }
     }
 
     fn bind(

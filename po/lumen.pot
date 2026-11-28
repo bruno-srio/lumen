@@ -75,17 +75,17 @@ msgid "On"
 msgstr ""
 
 #: src/model/device_object.rs:307 src/widgets/device_card.rs:304
-#: src/widgets/device_card.blp:45 src/widgets/group_card.blp:61
+#: src/widgets/device_card.blp:67 src/widgets/group_card.blp:61
 msgid "Power"
 msgstr ""
 
 #: src/model/device_object.rs:310 src/widgets/device_card.rs:303
-#: src/widgets/device_card.blp:60 src/widgets/group_card.blp:68
+#: src/widgets/device_card.blp:82 src/widgets/group_card.blp:68
 msgid "Brightness"
 msgstr ""
 
-#: src/model/device_object.rs:313 src/widgets/device_card.blp:80
-#: src/widgets/device_card.blp:81 src/widgets/color_popover.blp:14
+#: src/model/device_object.rs:313 src/widgets/device_card.blp:102
+#: src/widgets/device_card.blp:103 src/widgets/color_popover.blp:14
 #: src/widgets/group_card.blp:79 src/widgets/group_card.blp:80
 msgid "Color"
 msgstr ""
@@ -432,7 +432,11 @@ msgstr ""
 msgid "Group lights so one switch controls a room."
 msgstr ""
 
-#: src/widgets/device_card.blp:87
+#: src/widgets/device_card.blp:52
+msgid "No group"
+msgstr ""
+
+#: src/widgets/device_card.blp:109
 msgid "Device Menu"
 msgstr ""
 

@@ -1,0 +1,506 @@
+#!/bin/sh
+# Public Lumen commands. Cargo stays in scripts/dev.sh.
+set -eu
+set -o pipefail
+
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+# shellcheck disable=SC1091
+. "$ROOT/scripts/workspace.sh"
+
+RUNTIME_REPO="https://dl.flathub.org/repo/flathub.flatpakrepo"
+BRANCH="stable"
+
+usage() {
+  cat <<EOF
+Usage: scripts/lumen <command> [arguments...]
+
+  dev              Build and launch Lumen
+  test             Run the workspace tests
+  check            Compile without launching
+  fmt              Format Rust code (pass --check to verify only)
+  sim              Run only the Yeelight simulator
+  status           Show whether the simulator and dev Lumen are running
+  stop             Stop a Yeelight simulator left running
+  bootstrap        Recreate the Toolbox container
+  flatpak          Build the development Flatpak and export a bundle
+  flatpak release  Build the release Flatpak from the verified Git tag
+  release          Check the tree, test, and export a release bundle
+  clean            Show generated files that cleanup would delete
+
+Cargo runs through scripts/dev.sh. On this host that is the yeelight-dev
+Toolbox. Flatpak runs on the host. Generated files go under LUMEN_WORK
+(default: \$HOME/Code/workspaces/Lumen).
+
+  LUMEN_WORK=/other/path scripts/lumen flatpak
+
+release does not tag, push, or publish. It refuses a dirty tree, mismatched
+version numbers, or a tag that is not HEAD. --check runs those checks and
+does not test or build. --allow-dirty writes a local test bundle and warns
+that it may contain unreleased changes.
+
+clean is a dry-run unless --yes is given. --caches, --logs, and --cargo
+are separate. Active Cargo output under LUMEN_WORK stays unless --cargo
+is passed.
+EOF
+}
+
+resolve_work() {
+  LUMEN_WORK=$(python3 "$ROOT/scripts/require_work.py" "$LUMEN_WORK" "$ROOT")
+}
+
+version_report() {
+  python3 - "$ROOT" <<'PY'
+import pathlib, re, sys
+root = pathlib.Path(sys.argv[1])
+cargo = root.joinpath("Cargo.toml").read_text()
+meson = root.joinpath("meson.build").read_text()
+meta = root.joinpath("data/io.github.bruno_srio.Lumen.metainfo.xml.in").read_text()
+cargo_version = re.search(r'(?m)^version\s*=\s*"([^"]+)"', cargo)
+meson_version = re.search(r"version:\s*'([^']+)'", meson)
+meta_version = re.search(r'<release version="([^"]+)"', meta)
+print(cargo_version.group(1) if cargo_version else "")
+print(meson_version.group(1) if meson_version else "")
+print(meta_version.group(1) if meta_version else "")
+PY
+}
+
+versions_match() {
+  report=$(version_report)
+  cargo_version=$(printf '%s\n' "$report" | sed -n '1p')
+  meson_version=$(printf '%s\n' "$report" | sed -n '2p')
+  meta_version=$(printf '%s\n' "$report" | sed -n '3p')
+  if [ -z "$cargo_version" ] || [ "$cargo_version" != "$meson_version" ] || [ "$cargo_version" != "$meta_version" ]; then
+    echo "error: versions differ. Cargo is '${cargo_version:-missing}', Meson is '${meson_version:-missing}', AppStream is '${meta_version:-missing}'." >&2
+    return 1
+  fi
+  VERSION=$cargo_version
+  return 0
+}
+
+release_blockers() {
+  blocked=0
+  if [ -n "$(git -C "$ROOT" status --porcelain)" ]; then
+    echo "error: the Git working tree is not clean, including untracked files." >&2
+    git -C "$ROOT" status --porcelain >&2
+    blocked=1
+  fi
+  if ! versions_match; then
+    blocked=1
+  fi
+  if [ "${VERSION:-}" != "" ]; then
+    if ! git -C "$ROOT" rev-parse --verify --quiet "refs/tags/v${VERSION}^{commit}" >/dev/null; then
+      echo "error: tag v${VERSION} does not exist. Create it before preparing a release." >&2
+      blocked=1
+    else
+      tag_commit=$(git -C "$ROOT" rev-parse "v${VERSION}^{commit}")
+      head_commit=$(git -C "$ROOT" rev-parse HEAD)
+      if [ "$tag_commit" != "$head_commit" ]; then
+        echo "error: tag v${VERSION} points at ${tag_commit}, not HEAD ${head_commit}." >&2
+        blocked=1
+      fi
+    fi
+  fi
+  return "$blocked"
+}
+
+stage_archive() {
+  stage=$1
+  rev=$2
+  rm -rf "$stage"
+  mkdir -p "$stage"
+  git -C "$ROOT" archive --format=tar "$rev" | tar -C "$stage" -xf -
+}
+
+overlay_worktree() {
+  stage=$1
+  patch=$(mktemp)
+  git -C "$ROOT" diff --binary HEAD >"$patch" || {
+    rm -f "$patch"
+    return 1
+  }
+  if [ -s "$patch" ]; then
+    git -C "$stage" apply "$patch"
+  fi
+  rm -f "$patch"
+  git -C "$ROOT" ls-files --others --exclude-standard -z |
+    while IFS= read -r -d '' path; do
+      if git -C "$ROOT" check-ignore -q -- "$path"; then
+        continue
+      fi
+      mkdir -p "$stage/$(dirname -- "$path")"
+      cp -a "$ROOT/$path" "$stage/$path"
+    done
+}
+
+reject_ignored_stage() {
+  stage=$1
+  python3 - "$ROOT" "$stage" <<'PY'
+import os, subprocess, sys
+root, stage = sys.argv[1], sys.argv[2]
+ignored = []
+for dirpath, dirnames, filenames in os.walk(stage, followlinks=False):
+    for name in filenames:
+        full = os.path.join(dirpath, name)
+        if os.path.islink(full):
+            rel = os.path.relpath(full, stage)
+        else:
+            rel = os.path.relpath(full, stage)
+        result = subprocess.run(
+            ["git", "-C", root, "check-ignore", "-q", "--", rel],
+            check=False,
+        )
+        if result.returncode == 0:
+            ignored.append(rel)
+if ignored:
+    print("error: the stage contains ignored files:", file=sys.stderr)
+    for path in ignored:
+        print(f"  {path}", file=sys.stderr)
+    sys.exit(1)
+PY
+}
+
+write_manifest() {
+  source_manifest=$1
+  dest_manifest=$2
+  stage=$3
+  python3 - "$source_manifest" "$dest_manifest" "$stage" <<'PY'
+import json, pathlib, shutil, sys
+source, dest, stage = sys.argv[1:]
+manifest = json.loads(pathlib.Path(source).read_text())
+manifest["branch"] = "stable"
+vendor = pathlib.Path(stage) / "build-aux" / "cargo-sources.json"
+if not vendor.is_file():
+    print(f"error: {vendor} is not in the staged source", file=sys.stderr)
+    sys.exit(1)
+dest_path = pathlib.Path(dest)
+dest_path.parent.mkdir(parents=True, exist_ok=True)
+shutil.copy(vendor, dest_path.parent / "cargo-sources.json")
+sources = []
+for item in manifest["modules"][0]["sources"]:
+    if isinstance(item, dict) and item.get("type") == "dir":
+        item["path"] = str(pathlib.Path(stage).resolve())
+        sources.append(item)
+    elif item == "cargo-sources.json":
+        sources.append("cargo-sources.json")
+    else:
+        sources.append(item)
+manifest["modules"][0]["sources"] = sources
+dest_path.write_text(json.dumps(manifest, indent=4) + "\n")
+PY
+}
+
+same_filesystem() {
+  state=$1
+  build=$2
+  state_id=$(stat -c %d "$state")
+  build_id=$(stat -c %d "$build")
+  if [ "$state_id" != "$build_id" ]; then
+    echo "error: $state and $build are on different filesystems. flatpak-builder cannot share a state directory across devices." >&2
+    return 1
+  fi
+}
+
+prepare_flatpak_env() {
+  if [ -n "${CCACHE_DIR:-}" ] && [ ! -d "$CCACHE_DIR" ]; then
+    echo "warning: CCACHE_DIR=${CCACHE_DIR} does not exist, so it will not be passed to flatpak-builder." >&2
+    unset CCACHE_DIR
+  fi
+  if [ -n "${CARGO_TARGET_DIR:-}" ]; then
+    echo "The Flatpak build will not inherit CARGO_TARGET_DIR. The manifest sets its own Cargo home inside the sandbox." >&2
+  fi
+}
+
+verify_bundle() {
+  bundle=$1
+  repo=$2
+  app_id=$3
+  if [ -L "$bundle" ] || [ ! -f "$bundle" ]; then
+    echo "error: ${bundle} is not a regular file." >&2
+    return 1
+  fi
+  if [ ! -s "$bundle" ]; then
+    echo "error: ${bundle} is empty." >&2
+    return 1
+  fi
+  ref_file="${repo}/refs/heads/app/${app_id}/$(uname -m)/${BRANCH}"
+  if [ ! -f "$ref_file" ]; then
+    echo "error: ${repo} does not contain app/${app_id}/$(uname -m)/${BRANCH}." >&2
+    find "${repo}/refs" -type f >&2 || true
+    return 1
+  fi
+  sha256sum "$bundle" >"${bundle}.sha256"
+  echo "Bundle ${bundle}"
+  echo "Checksum $(cut -d ' ' -f 1 "${bundle}.sha256")"
+}
+
+build_flatpak() {
+  variant=$1
+  resolve_work
+  if [ "$variant" = release ]; then
+    app_id="io.github.bruno_srio.Lumen"
+    source_manifest="$ROOT/build-aux/io.github.bruno_srio.Lumen.json"
+    stage="$LUMEN_WORK/flatpak/staging/release"
+    if [ "${LUMEN_DIRTY:-0}" -eq 1 ]; then
+      stage="$LUMEN_WORK/flatpak/staging/dirty"
+    fi
+  else
+    app_id="io.github.bruno_srio.Lumen.Devel"
+    source_manifest="$ROOT/build-aux/io.github.bruno_srio.Lumen.Devel.json"
+    stage="$LUMEN_WORK/flatpak/staging/dirty"
+  fi
+  state="$LUMEN_WORK/flatpak/state/$variant"
+  build="$LUMEN_WORK/flatpak/build/$variant"
+  repo="$LUMEN_WORK/flatpak/repo/$variant"
+  manifest="$LUMEN_WORK/flatpak/staging/${variant}.json"
+  mkdir -p "$state" "$build" "$repo" "$LUMEN_WORK/logs" "$(dirname -- "$manifest")"
+  same_filesystem "$state" "$build"
+  if [ "$variant" = release ] && [ "${LUMEN_DIRTY:-0}" -eq 0 ]; then
+    stage_archive "$stage" "v${VERSION}"
+  else
+    stage_archive "$stage" HEAD
+    overlay_worktree "$stage"
+  fi
+  reject_ignored_stage "$stage"
+  write_manifest "$source_manifest" "$manifest" "$stage"
+  if [ "$variant" = release ] && [ "${LUMEN_DIRTY:-0}" -eq 1 ]; then
+    bundle="$LUMEN_WORK/packages/local/lumen-${VERSION}-dirty.flatpak"
+    mkdir -p "$(dirname -- "$bundle")"
+  elif [ "$variant" = release ]; then
+    bundle="$LUMEN_WORK/packages/v${VERSION}/lumen-${VERSION}.flatpak"
+    mkdir -p "$(dirname -- "$bundle")"
+    if [ -e "$bundle" ]; then
+      echo "A bundle already exists at ${bundle}." >&2
+      if [ ! -t 0 ]; then
+        echo "error: refusing to overwrite it without a terminal." >&2
+        return 1
+      fi
+      printf 'Overwrite it? [y/N] ' >&2
+      read -r answer
+      case "$answer" in
+        y|Y|yes|YES) ;;
+        *) echo "error: left the existing bundle in place." >&2; return 1 ;;
+      esac
+    fi
+  else
+    bundle="$LUMEN_WORK/flatpak/lumen-devel.flatpak"
+  fi
+  log="$LUMEN_WORK/logs/flatpak-${variant}.log"
+  prepare_flatpak_env
+  set -o pipefail
+  env -u CARGO_TARGET_DIR flatpak run org.flatpak.Builder \
+    --force-clean \
+    --state-dir="$state" \
+    --repo="$repo" \
+    "$build" \
+    "$manifest" 2>&1 | tee "$log"
+  env -u CARGO_TARGET_DIR flatpak build-bundle \
+    --runtime-repo="$RUNTIME_REPO" \
+    "$repo" \
+    "$bundle" \
+    "$app_id" \
+    "$BRANCH"
+  verify_bundle "$bundle" "$repo" "$app_id"
+}
+
+release_cmd() {
+  dirty=0
+  check_only=0
+  for arg in "$@"; do
+    case "$arg" in
+      --allow-dirty) dirty=1 ;;
+      --check) check_only=1 ;;
+      *)
+        echo "error: unknown release argument '${arg}'" >&2
+        return 2
+        ;;
+    esac
+  done
+  if [ "$check_only" -eq 1 ]; then
+    if [ "$dirty" -eq 1 ]; then
+      echo "error: --check does not combine with --allow-dirty." >&2
+      return 2
+    fi
+    if ! release_blockers; then
+      echo "error: release preparation stopped. No bundle was created." >&2
+      return 1
+    fi
+    echo "release checks passed"
+    return 0
+  fi
+  if [ "$dirty" -eq 1 ]; then
+    echo "warning: --allow-dirty is a local test. The package may contain unreleased changes and is not a release." >&2
+    if ! versions_match; then
+      return 1
+    fi
+    LUMEN_DIRTY=1
+    "$ROOT/scripts/dev.sh" test
+    build_flatpak release
+    return 0
+  fi
+  if ! release_blockers; then
+    echo "error: release preparation stopped. No bundle was created." >&2
+    return 1
+  fi
+  "$ROOT/scripts/dev.sh" test
+  LUMEN_DIRTY=0
+  build_flatpak release
+}
+
+flatpak_cmd() {
+  mode=${1:-devel}
+  case "$mode" in
+    devel)
+      LUMEN_DIRTY=1
+      build_flatpak devel
+      ;;
+    release)
+      shift || true
+      if [ "${1:-}" = --allow-dirty ]; then
+        echo "error: pass --allow-dirty to scripts/lumen release, not flatpak release." >&2
+        return 2
+      fi
+      if ! release_blockers; then
+        echo "error: release preparation stopped. No bundle was created." >&2
+        return 1
+      fi
+      LUMEN_DIRTY=0
+      build_flatpak release
+      ;;
+    *)
+      echo "error: unknown flatpak argument '${mode}'" >&2
+      return 2
+      ;;
+  esac
+}
+
+clean_reason() {
+  printf '%s\t%s\n' "$1" "$2"
+}
+
+path_has_symlink() {
+  current=$1
+  stop=$2
+  while [ "$current" != "$stop" ] && [ "$current" != "/" ]; do
+    if [ -L "$current" ]; then
+      return 0
+    fi
+    current=$(dirname -- "$current")
+  done
+  return 1
+}
+
+consider_path() {
+  path=$1
+  reason=$2
+  stop=$3
+  if [ ! -e "$path" ] && [ ! -L "$path" ]; then
+    return 0
+  fi
+  if path_has_symlink "$path" "$stop"; then
+    echo "preserved	$(du -sh "$path" 2>/dev/null | awk '{print $1}')	${path}	symlink; not followed" 
+    return 0
+  fi
+  size=$(du -sh "$path" | awk '{print $1}')
+  echo "delete	${size}	${path}	${reason}"
+  if [ "$DO_DELETE" -eq 1 ]; then
+    rm -rf "$path"
+  fi
+}
+
+clean_cmd() {
+  DO_DELETE=0
+  DO_CACHES=0
+  DO_LOGS=0
+  DO_CARGO=0
+  for arg in "$@"; do
+    case "$arg" in
+      --yes) DO_DELETE=1 ;;
+      --caches) DO_CACHES=1 ;;
+      --logs) DO_LOGS=1 ;;
+      --cargo) DO_CARGO=1 ;;
+      *)
+        echo "error: unknown clean argument '${arg}'" >&2
+        return 2
+        ;;
+    esac
+  done
+  resolve_work
+  if [ "$DO_DELETE" -eq 0 ]; then
+    echo "Dry-run. Pass --yes to delete the rows marked delete."
+  fi
+  consider_path "$ROOT/target" "Cargo output inside the repository" "$ROOT"
+  consider_path "$ROOT/_build" "Meson build directory" "$ROOT"
+  consider_path "$ROOT/.flatpak-builder" "Flatpak builder cache inside the repository" "$ROOT"
+  if [ "$DO_CARGO" -eq 1 ]; then
+    consider_path "$LUMEN_WORK/cargo/toolbox" "Toolbox Cargo output" "$LUMEN_WORK"
+    consider_path "$LUMEN_WORK/cargo/host" "host Cargo output" "$LUMEN_WORK"
+  else
+    echo "kept	-	${LUMEN_WORK}/cargo	pass --cargo to include active Cargo output"
+  fi
+  consider_path "$LUMEN_WORK/flatpak/build" "Flatpak build directories" "$LUMEN_WORK"
+  consider_path "$LUMEN_WORK/flatpak/repo" "Flatpak OSTree repositories" "$LUMEN_WORK"
+  for bundle in "$ROOT"/lumen-*.flatpak; do
+    [ -e "$bundle" ] || continue
+    name=$(basename -- "$bundle")
+    version=${name#lumen-}
+    version=${version%.flatpak}
+    copy="$LUMEN_WORK/packages/v${version}/${name}"
+    if [ -L "$bundle" ] || [ ! -f "$bundle" ]; then
+      echo "preserved	-	${bundle}	not a regular file"
+      continue
+    fi
+    if [ -f "$copy" ] && [ ! -L "$copy" ] && cmp -s "$bundle" "$copy"; then
+      consider_path "$bundle" "matches ${copy}" "$ROOT"
+    else
+      size=$(du -sh "$bundle" | awk '{print $1}')
+      echo "preserved	${size}	${bundle}	no identical copy in packages/v${version}"
+    fi
+  done
+  if [ "$DO_CACHES" -eq 1 ]; then
+    consider_path "$LUMEN_WORK/flatpak/state/devel" "Flatpak devel state cache" "$LUMEN_WORK"
+    consider_path "$LUMEN_WORK/flatpak/state/release" "Flatpak release state cache" "$LUMEN_WORK"
+  else
+    echo "kept	-	${LUMEN_WORK}/flatpak/state	pass --caches to include Flatpak state"
+  fi
+  if [ "$DO_LOGS" -eq 1 ]; then
+    if [ -d "$LUMEN_WORK/logs" ] && [ ! -L "$LUMEN_WORK/logs" ]; then
+      find "$LUMEN_WORK/logs" -type f ! -type l -print | while IFS= read -r file; do
+        consider_path "$file" "log file" "$LUMEN_WORK/logs"
+      done
+    fi
+  else
+    echo "kept	-	${LUMEN_WORK}/logs	pass --logs to include log files"
+  fi
+  echo "kept	-	${LUMEN_WORK}/packages	release bundles are not cleaned"
+}
+
+cmd=${1:-}
+if [ $# -gt 0 ]; then
+  shift
+fi
+
+case "$cmd" in
+  dev|"")
+    exec "$ROOT/scripts/dev.sh" run "$@"
+    ;;
+  test|check|fmt|sim|status|stop|bootstrap)
+    exec "$ROOT/scripts/dev.sh" "$cmd" "$@"
+    ;;
+  flatpak)
+    flatpak_cmd "$@"
+    ;;
+  release)
+    release_cmd "$@"
+    ;;
+  clean)
+    clean_cmd "$@"
+    ;;
+  -h|--help|help)
+    usage
+    ;;
+  *)
+    echo "error: unknown command '${cmd}'" >&2
+    usage >&2
+    exit 2
+    ;;
+esac

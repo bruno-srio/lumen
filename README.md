@@ -13,16 +13,14 @@
 </p>
 
 <p align="center">
-  <img src="data/screenshots/lights.png" width="640" alt="Lumen showing three lights with power, brightness, and color controls">
+  <img src="data/screenshots/lights.png" width="640" alt="The Lights page, with power, brightness, and the groups each bulb belongs to">
 </p>
 
-Lumen is a native GNOME application. It finds Yeelight lights on the LAN and lets you turn them on or off, set the brightness, pick a color or a white temperature, save colors, and control a group together. It does not use a Yeelight account, a cloud API, or an internet connection.
+Lumen is a GNOME app for Yeelight lights on the local network. You can turn them on or off, set the brightness, pick a color or a white temperature, save colors, and control a group together. It does not use a Yeelight account, a cloud API, or an internet connection.
+
+The lights speak Yeelight's LAN protocol: a UDP search on the local network, then plain-text commands over TCP. There is no encryption. [Security](docs/SECURITY.md) says what that means. Each bulb also needs LAN Control turned on in the Yeelight phone app. The steps are in [Enable LAN Control](docs/LAN-CONTROL.md).
 
 Yeelight is a trademark of its owner. Lumen is an independent project and is not affiliated with Yeelight.
-
-## Install
-
-<a href="https://flathub.org/apps/io.github.bruno_srio.Lumen"><img width="200" alt="Get it on Flathub" src="https://flathub.org/api/badge?locale=en"/></a>
 
 ## What it does
 
@@ -36,44 +34,39 @@ Yeelight is a trademark of its owner. Lumen is an independent project and is not
 - Dims a card when a light goes away, and reconnects when it returns.
 - Slows slider changes so a drag does not hit the bulb's command limit.
 
-## Enable LAN Control
+## Install
 
-Each bulb has LAN Control (sometimes called Developer Mode) turned off until you enable it in the Yeelight mobile app, in that light's settings. The computer and the lights must be on the same network. The steps are in [docs/LAN-CONTROL.md](docs/LAN-CONTROL.md).
+Flatpak bundles are on the [releases](https://github.com/bruno-srio/lumen/releases) page. Download `lumen-<version>.flatpak` and install it with:
+
+```sh
+flatpak install --user lumen-<version>.flatpak
+```
+
+You also need the GNOME 51 runtime. The bundle points at Flathub for that runtime. Lumen itself is not on Flathub.
 
 ## Building
 
-Contributors with GTK 4.20 or newer and libadwaita 1.8 or newer:
+If GTK 4.20 or newer and libadwaita 1.8 or newer are installed:
 
 ```sh
 cargo test --workspace
 cargo run -p lumen
 ```
 
-On Fedora, those libraries can stay inside the `yeelight-dev` Toolbox. `./scripts/dev.sh` uses that container when the host does not have them. After a Fedora upgrade, run `./scripts/dev.sh bootstrap` to recreate it. Details are in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+`./scripts/lumen` is the command I use. It calls `./scripts/dev.sh`, which runs Cargo on the host when `pkg-config` can see those libraries, and otherwise in a Toolbox. You do not need that container if the libraries are already on your machine. Setup notes are in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
-## Build from source
-
-Fedora, or another distribution with GTK 4.20, libadwaita 1.8, and Rust 1.87:
-
-```sh
-sudo dnf install rust cargo clippy rustfmt gtk4-devel libadwaita-devel \
-  meson blueprint-compiler desktop-file-utils appstream gettext gcc pkgconf
-meson setup _build -Dprofile=development
-meson compile -C _build
-_build/src/lumen
-```
-
-The development build uses the application id `io.github.bruno_srio.Lumen.Devel`, so its settings stay separate. To try the app without bulbs, run `cargo run -p yeelight-sim`. See [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/TESTING.md](docs/TESTING.md).
+To try the app without bulbs, run `cargo run -p yeelight-sim` in another terminal.
 
 ## Support the project
 
-If Lumen is useful, you can support development:
+If Lumen is useful, you can [sponsor the work on GitHub](https://github.com/sponsors/bruno-srio).
 
-- [GitHub Sponsors](https://github.com/sponsors/bruno-srio)
-- [Ko-fi](https://ko-fi.com/bruno-srio)
+Ko-fi, donations later.
 
 ## More
 
-- [Security](docs/SECURITY.md) — the Yeelight protocol is not encrypted.
-- [Packaging](docs/PACKAGING.md) — Flatpak and Flathub.
+- [Contributing](CONTRIBUTING.md)
+- [Security](docs/SECURITY.md)
+- [Packaging](docs/PACKAGING.md)
 - [Protocol notes](docs/PROTOCOL-NOTES.md)
+- [How this project is written](docs/AI_USAGE.md)

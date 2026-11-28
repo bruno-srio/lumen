@@ -33,6 +33,20 @@
       "command": "${workspaceFolder}/scripts/dev.sh",
       "args": ["fmt", "--check"],
       "problemMatcher": []
+    },
+    {
+      "label": "Build Lumen Development Flatpak",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/lumen",
+      "args": ["flatpak"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Preview Lumen Cleanup",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/lumen",
+      "args": ["clean"],
+      "problemMatcher": []
     }
   ]
 }

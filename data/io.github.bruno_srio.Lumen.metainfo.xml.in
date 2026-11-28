@@ -30,15 +30,28 @@
   <url type="donation">https://github.com/sponsors/bruno-srio</url>
   <screenshots>
     <screenshot type="default">
-      <caption>The light list, with power, brightness, and color controls</caption>
-      <image>https://raw.githubusercontent.com/bruno-srio/lumen/v0.2.0/data/screenshots/lights.png</image>
+      <caption>The light list, with power, brightness, and the groups each light belongs to</caption>
+      <image>https://raw.githubusercontent.com/bruno-srio/lumen/v0.4.1/data/screenshots/flathub/lights.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Groups, each with its own icon and controls</caption>
+      <image>https://raw.githubusercontent.com/bruno-srio/lumen/v0.4.1/data/screenshots/flathub/groups.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Color and white temperature controls for a light</caption>
+      <image>https://raw.githubusercontent.com/bruno-srio/lumen/v0.4.1/data/screenshots/flathub/color.png</image>
     </screenshot>
     <screenshot>
       <caption>Lumen in the dark style</caption>
-      <image>https://raw.githubusercontent.com/bruno-srio/lumen/v0.2.0/data/screenshots/lights-dark.png</image>
+      <image>https://raw.githubusercontent.com/bruno-srio/lumen/v0.4.1/data/screenshots/flathub/lights-dark.png</image>
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.4.1" date="2026-11-28">
+      <description>
+        <p>The Lights and Groups icons match, and a light shows the groups it belongs to.</p>
+      </description>
+    </release>
     <release version="0.4.0" date="2026-11-27">
       <description>
         <p>Lights and groups are on separate pages. A group can have an icon, the sleep timer accepts a custom duration, and each light's menu shows only the controls that light supports.</p>
