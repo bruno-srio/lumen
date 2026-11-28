@@ -1,12 +1,64 @@
 use glib::user_config_dir;
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
+use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use yeelight::DiscoveryInfo;
 
 use crate::config::APP_ID;
-use crate::group_icons::default_group_icon;
+use crate::group_icons::{default_group_icon, normalize_group_icon};
+
+/// Icons drawn on a light card before the overflow count.
+pub const VISIBLE_GROUP_ICONS: usize = 3;
+
+/// One group a light belongs to, in the order groups are saved.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct GroupMark {
+    pub icon: String,
+    pub name: String,
+}
+
+/// What the light card draws for a membership list. Empty means the card shows "No group".
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct GroupRow {
+    pub icons: Vec<GroupMark>,
+    pub overflow: usize,
+    pub tooltip: String,
+}
+
+/// Every group that lists `device_id`, in saved order. A group id is returned once.
+pub fn groups_containing(groups: &[StoredGroup], device_id: &str) -> Vec<GroupMark> {
+    let mut seen = HashSet::new();
+    let mut marks = Vec::new();
+    for group in groups {
+        if !seen.insert(group.id.clone()) {
+            continue;
+        }
+        if !group.members.iter().any(|member| member == device_id) {
+            continue;
+        }
+        marks.push(GroupMark {
+            icon: normalize_group_icon(&group.icon).to_string(),
+            name: group.name.clone(),
+        });
+    }
+    marks
+}
+
+/// The icons, overflow count, and full name list for a card. Does not drop names from the tooltip.
+pub fn present_group_row(groups: &[GroupMark]) -> GroupRow {
+    let visible = VISIBLE_GROUP_ICONS.min(groups.len());
+    GroupRow {
+        icons: groups[..visible].to_vec(),
+        overflow: groups.len() - visible,
+        tooltip: groups
+            .iter()
+            .map(|group| group.name.as_str())
+            .collect::<Vec<_>>()
+            .join("\n"),
+    }
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct StoredDevice {
@@ -313,5 +365,115 @@ mod tests {
         assert_eq!(loaded.groups()[0].icon, "lumen-bed-symbolic");
         assert_eq!(loaded.groups()[0].members, vec!["0x1".to_string()]);
         let _ = fs::remove_file(path);
+    }
+
+    fn sample_group(id: &str, name: &str, icon: &str, members: &[&str]) -> StoredGroup {
+        StoredGroup {
+            id: id.into(),
+            name: name.into(),
+            members: members.iter().map(|member| (*member).to_string()).collect(),
+            icon: icon.into(),
+        }
+    }
+
+    #[test]
+    fn a_light_in_no_group_has_no_marks() {
+        let groups = [sample_group("g1", "Room", "lumen-home-symbolic", &["0x2"])];
+        assert!(groups_containing(&groups, "0x1").is_empty());
+    }
+
+    #[test]
+    fn a_light_keeps_every_group_it_belongs_to() {
+        let groups = [
+            sample_group("g1", "Room", "lumen-home-symbolic", &["0x1"]),
+            sample_group("g2", "Desk", "lumen-desk-symbolic", &["0x9"]),
+            sample_group("g3", "Bed", "lumen-bed-symbolic", &["0x1", "0x3"]),
+            sample_group("g4", "Kitchen", "missing", &["0x1"]),
+            sample_group("g5", "Bath", "lumen-bath-symbolic", &["0x1"]),
+        ];
+        let marks = groups_containing(&groups, "0x1");
+        assert_eq!(
+            marks
+                .iter()
+                .map(|mark| mark.name.as_str())
+                .collect::<Vec<_>>(),
+            vec!["Room", "Bed", "Kitchen", "Bath"]
+        );
+        assert_eq!(marks[2].icon, default_group_icon());
+        assert_eq!(marks.len(), 4);
+    }
+
+    #[test]
+    fn a_duplicated_member_id_does_not_repeat_the_group() {
+        let groups = [sample_group(
+            "g1",
+            "Room",
+            "lumen-home-symbolic",
+            &["0x1", "0x1"],
+        )];
+        let marks = groups_containing(&groups, "0x1");
+        assert_eq!(marks.len(), 1);
+        assert_eq!(marks[0].name, "Room");
+    }
+
+    #[test]
+    fn a_duplicated_group_id_is_kept_once() {
+        let groups = [
+            sample_group("g1", "Room", "lumen-home-symbolic", &["0x1"]),
+            sample_group("g1", "Later", "lumen-bed-symbolic", &["0x1"]),
+        ];
+        let marks = groups_containing(&groups, "0x1");
+        assert_eq!(marks.len(), 1);
+        assert_eq!(marks[0].name, "Room");
+        assert_eq!(marks[0].icon, "lumen-home-symbolic");
+    }
+
+    fn marks(names: &[&str]) -> Vec<GroupMark> {
+        names
+            .iter()
+            .map(|name| GroupMark {
+                icon: "lumen-lamp-symbolic".into(),
+                name: (*name).into(),
+            })
+            .collect()
+    }
+
+    #[test]
+    fn no_groups_leave_the_row_empty() {
+        let row = present_group_row(&[]);
+        assert!(row.icons.is_empty());
+        assert_eq!(row.overflow, 0);
+        assert!(row.tooltip.is_empty());
+    }
+
+    #[test]
+    fn three_groups_show_every_icon_and_no_overflow() {
+        let row = present_group_row(&marks(&["Room", "Bed", "Desk"]));
+        assert_eq!(row.icons.len(), 3);
+        assert_eq!(row.overflow, 0);
+        assert_eq!(row.tooltip, "Room\nBed\nDesk");
+    }
+
+    #[test]
+    fn a_fourth_group_becomes_plus_one() {
+        let row = present_group_row(&marks(&["Room", "Bed", "Desk", "Kitchen"]));
+        assert_eq!(
+            row.icons
+                .iter()
+                .map(|mark| mark.name.as_str())
+                .collect::<Vec<_>>(),
+            vec!["Room", "Bed", "Desk"]
+        );
+        assert_eq!(row.overflow, 1);
+        assert_eq!(row.tooltip, "Room\nBed\nDesk\nKitchen");
+    }
+
+    #[test]
+    fn overflow_still_lists_every_name() {
+        let names = ["Room", "Bed", "Desk", "Kitchen", "Bath", "Sun"];
+        let row = present_group_row(&marks(&names));
+        assert_eq!(row.icons.len(), VISIBLE_GROUP_ICONS);
+        assert_eq!(row.overflow, 3);
+        assert_eq!(row.tooltip, names.join("\n"));
     }
 }
