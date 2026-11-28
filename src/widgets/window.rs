@@ -355,6 +355,11 @@ impl Window {
                         },
                     },
                 );
+                if let Some(win) = window.upgrade() {
+                    if let Some(store) = win.imp().store.get() {
+                        card.set_groups(&store.groups());
+                    }
+                }
                 card.upcast()
             });
     }
